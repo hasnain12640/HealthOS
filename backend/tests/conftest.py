@@ -3,8 +3,12 @@ import os
 # Set test secrets before app settings are loaded.
 os.environ["SECRET_KEY"] = "test-secret-key-not-for-production"
 os.environ["SEED_DEMO_DATA"] = "False"
+# Keep tests isolated from external AI/ASR/TTS providers.
+os.environ["AI_PROVIDER"] = "mock"
+os.environ["VOICE_PROVIDER"] = "mock"
 
 import pytest
+from datetime import date, timedelta
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -61,3 +65,81 @@ def auth_headers(client):
     )
     token = login_response.json()["access_token"]
     return {"Authorization": f"Bearer {token}"}
+
+
+# --- Shared cycle-tracking helpers ----------------------------------------
+
+FEMALE_PROFILE = {
+    "user_name": "Ayesha Test",
+    "age": 28,
+    "sex": "female",
+    "height_cm": 160.0,
+    "weight_kg": 55.0,
+    "blood_group": "O+",
+    "city": "Lahore",
+    "language": "en",
+}
+
+MALE_PROFILE = {
+    "user_name": "Bilal Test",
+    "age": 34,
+    "sex": "male",
+    "height_cm": 172.0,
+    "weight_kg": 75.0,
+    "blood_group": "O+",
+    "city": "Lahore",
+    "language": "en",
+}
+
+
+def days_ago(n: int) -> str:
+    return (date.today() - timedelta(days=n)).isoformat()
+
+
+def register_and_login(client, email: str, name: str) -> dict:
+    client.post(
+        "/api/v1/auth/register",
+        json={"name": name, "email": email, "password": "password123"},
+    )
+    token = client.post(
+        "/api/v1/auth/login",
+        json={"email": email, "password": "password123"},
+    ).json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
+
+
+@pytest.fixture
+def female_headers(client):
+    """A registered female user with a completed profile."""
+    headers = register_and_login(client, "female@example.com", "Ayesha Test")
+    response = client.post("/api/v1/profile", json=FEMALE_PROFILE, headers=headers)
+    assert response.status_code == 201
+    return headers
+
+
+@pytest.fixture
+def male_headers(client, auth_headers):
+    """A registered male user with a completed profile."""
+    response = client.post("/api/v1/profile", json=MALE_PROFILE, headers=auth_headers)
+    assert response.status_code == 201
+    return auth_headers
+
+
+@pytest.fixture
+def second_female_headers(client):
+    headers = register_and_login(client, "female2@example.com", "Sara Test")
+    response = client.post(
+        "/api/v1/profile", json={**FEMALE_PROFILE, "user_name": "Sara Test"}, headers=headers
+    )
+    assert response.status_code == 201
+    return headers
+
+
+def create_cycle(client, headers, start: str, period_length: int = 5):
+    response = client.post(
+        "/api/v1/cycles",
+        json={"start_date": start, "period_length": period_length},
+        headers=headers,
+    )
+    assert response.status_code == 201, response.text
+    return response.json()
