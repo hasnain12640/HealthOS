@@ -80,8 +80,35 @@ export interface DashboardData {
     description: string
     is_ai_generated: boolean
   }>
+  wearable: {
+    connection_id: string
+    device_name: string
+    device_type: string
+    provider: string
+    status: string
+    last_synced_at: string
+    steps: number | null
+    resting_heart_rate: number | null
+    sleep_hours: number | null
+    sleep_score: string | null
+    active_calories: number | null
+    hydration_liters: number | null
+    distance_km: number | null
+  } | null
+  womens_health: {
+    cycles_tracked: number
+    current_cycle_day: number | null
+    current_phase: string | null
+    average_cycle_length: number | null
+    average_period_length: number | null
+    predicted_period_start: string | null
+    estimated_fertile_start: string | null
+    estimated_fertile_end: string | null
+    needs_more_data: boolean
+    recent_symptoms: Array<{ date: string; symptom_type: string; severity: string }>
+  } | null
   ai_insight: {
-    text: string
+    text: string | null
     generated_by: string
     date: string
   }

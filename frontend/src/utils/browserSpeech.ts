@@ -125,3 +125,47 @@ export async function speakBrowserText(options: SpeakOptions): Promise<boolean> 
     speech.speak(utterance)
   })
 }
+
+export async function diagnoseBrowserSpeech(): Promise<void> {
+  if (!isDev) return
+
+  const hasSynthesis = typeof window !== 'undefined' && 'speechSynthesis' in window
+  const hasUtterance = typeof window !== 'undefined' && 'SpeechSynthesisUtterance' in window
+  log('DIAGNOSIS — speechSynthesis exists:', hasSynthesis)
+  log('DIAGNOSIS — SpeechSynthesisUtterance exists:', hasUtterance)
+
+  const speech = getBrowserSpeech()
+  if (!speech) {
+    log('DIAGNOSIS — aborting: speechSynthesis unavailable')
+    return
+  }
+
+  let available = speech.getVoices()
+  if (available.length === 0) {
+    available = await loadVoices(speech)
+  }
+
+  log('DIAGNOSIS — voice count:', available.length)
+  log('DIAGNOSIS — voices:', available.map(voice => ({ name: voice.name, lang: voice.lang, default: voice.default })))
+
+  const normalizeLang = (lang: string) => lang.toLowerCase().replace(/_/g, '-')
+  const urPkVoice = available.find(voice => normalizeLang(voice.lang) === 'ur-pk') ?? null
+  const urVoice = available.find(voice => normalizeLang(voice.lang).startsWith('ur')) ?? null
+  log('DIAGNOSIS — ur-PK voice exists:', Boolean(urPkVoice), urPkVoice?.name, urPkVoice?.lang)
+  log('DIAGNOSIS — ur voice exists:', Boolean(urVoice), urVoice?.name, urVoice?.lang)
+
+  const selectedUrdu = selectVoice(available, 'ur')
+  log('DIAGNOSIS — selected Urdu voice:', selectedUrdu?.name, selectedUrdu?.lang)
+
+  const phrases: { text: string; language: DetectedVoiceLanguage }[] = [
+    { text: 'ٹھیک ہے، میں نے 500 ملی لیٹر پانی آپ کی ہائیڈریشن میں شامل کر دیا ہے۔', language: 'ur' },
+    { text: 'السلام علیکم', language: 'ur' },
+    { text: 'Hello, this is Mira.', language: 'en' },
+  ]
+
+  for (const phrase of phrases) {
+    log('DIAGNOSIS — speaking test phrase:', phrase.text, phrase.language)
+    const ok = await speakBrowserText(phrase)
+    log('DIAGNOSIS — speak result:', ok ? 'success' : 'failure', phrase.text)
+  }
+}

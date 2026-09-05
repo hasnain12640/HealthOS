@@ -1,5 +1,5 @@
 import api from './api'
-import type { DayPlan } from '../types'
+import type { DayPlan, StructuredInsight } from '../types'
 
 export interface GeneratedPlan {
   plan: {
@@ -11,6 +11,7 @@ export interface GeneratedPlan {
 }
 
 export interface InsightData {
+  insight: StructuredInsight
   text: string
   provider: string
   date: string

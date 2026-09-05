@@ -7,12 +7,12 @@ interface BadgeProps {
 }
 
 const variantConfig: Record<BadgeVariant, { dot: string; text: string; bg: string }> = {
-  normal:   { dot: 'bg-[#10B981]', text: 'text-[#10B981]', bg: 'bg-[#10B981]/10' },
-  low:      { dot: 'bg-[#F59E0B]', text: 'text-[#F59E0B]', bg: 'bg-[#F59E0B]/10' },
-  high:     { dot: 'bg-[#EF4444]', text: 'text-[#EF4444]', bg: 'bg-[#EF4444]/10' },
-  critical: { dot: 'bg-[#DC2626]', text: 'text-[#DC2626]', bg: 'bg-[#DC2626]/10' },
-  info:     { dot: 'bg-[#0EA5E9]', text: 'text-[#0EA5E9]', bg: 'bg-[#0EA5E9]/10' },
-  default:  { dot: 'bg-[#6B7280]', text: 'text-[#9CA3AF]', bg: 'bg-[#1F2937]' },
+  normal:   { dot: 'bg-status-normal', text: 'text-status-normal', bg: 'bg-status-normal/10' },
+  low:      { dot: 'bg-status-low', text: 'text-status-low', bg: 'bg-status-low/10' },
+  high:     { dot: 'bg-status-high', text: 'text-status-high', bg: 'bg-status-high/10' },
+  critical: { dot: 'bg-status-critical', text: 'text-status-critical', bg: 'bg-status-critical/10' },
+  info:     { dot: 'bg-primary', text: 'text-primary', bg: 'bg-primary/10' },
+  default:  { dot: 'bg-text-muted', text: 'text-text-secondary', bg: 'bg-bg-elevated' },
 }
 
 const labelMap: Record<BadgeVariant, string> = {

@@ -1,7 +1,8 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap');
 @import "tailwindcss";
 
 @theme {
+  /* === Dark theme (default) === */
   --color-bg-base: #0A0F1E;
   --color-bg-surface: #111827;
   --color-bg-elevated: #1F2937;
@@ -35,6 +36,25 @@
   --radius-btn: 0.5rem;
 }
 
+/* === Light theme overrides === */
+:root.light {
+  --color-bg-base: #F8FAFC;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-elevated: #F1F5F9;
+  --color-bg-subtle: #F8FAFC;
+
+  --color-primary: #0284C7;
+  --color-primary-dark: #0369A1;
+  --color-primary-light: #38BDF8;
+
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
+
+  --color-border: #E2E8F0;
+  --color-border-subtle: #CBD5E1;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
 }
@@ -42,10 +62,14 @@
 html, body {
   margin: 0;
   padding: 0;
-  background-color: #0A0F1E;
-  color: #F9FAFB;
+  background-color: var(--color-bg-base);
+  color: var(--color-text-primary);
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+}
+
+html[dir="rtl"] body {
+  font-family: 'Noto Nastaliq Urdu', 'Inter', system-ui, sans-serif;
 }
 
 #root {
@@ -53,7 +77,157 @@ html, body {
   min-height: 100vh;
 }
 
+/* === Dark scrollbar (default) === */
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: #111827; }
-::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+::-webkit-scrollbar-track { background: var(--color-bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--color-border-subtle); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+
+/* === Light scrollbar === */
+:root.light ::-webkit-scrollbar-track { background: #F1F5F9; }
+:root.light ::-webkit-scrollbar-thumb { background: #CBD5E1; }
+:root.light ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+
+/* === Dashboard intelligence surface === */
+.dashboard-page {
+  position: relative;
+}
+
+.dashboard-glass {
+  background:
+    linear-gradient(145deg, rgb(22 29 46 / 0.9), rgb(17 24 39 / 0.74)),
+    rgb(17 24 39 / 0.72);
+  box-shadow: 0 16px 42px rgb(0 0 0 / 0.16), inset 0 1px 0 rgb(255 255 255 / 0.025);
+  backdrop-filter: blur(14px);
+}
+
+:root.light .dashboard-glass {
+  background:
+    linear-gradient(145deg, rgb(255 255 255 / 0.96), rgb(241 245 249 / 0.82)),
+    rgb(255 255 255 / 0.88);
+  box-shadow: 0 14px 32px rgb(15 23 42 / 0.07), inset 0 1px 0 rgb(255 255 255 / 0.7);
+}
+
+.dashboard-hover {
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.dashboard-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgb(14 165 233 / 0.36);
+  box-shadow: 0 18px 38px rgb(14 165 233 / 0.1), inset 0 1px 0 rgb(255 255 255 / 0.04);
+}
+
+.dashboard-eyebrow,
+.dashboard-section-label {
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.dashboard-context-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  border: 1px solid rgb(148 163 184 / 0.18);
+  border-radius: 9999px;
+  background: rgb(15 23 42 / 0.42);
+  color: var(--color-text-secondary);
+  font-size: 0.6875rem;
+  line-height: 1;
+  padding: 0.4375rem 0.625rem;
+}
+
+:root.light .dashboard-context-pill {
+  background: rgb(255 255 255 / 0.72);
+}
+
+.dashboard-progress {
+  transition: width 500ms ease;
+}
+
+.dashboard-anatomy-panel::after {
+  position: absolute;
+  inset: 38% auto auto 50%;
+  width: 13rem;
+  height: 13rem;
+  border-radius: 9999px;
+  background: rgb(14 165 233 / 0.13);
+  content: '';
+  filter: blur(50px);
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.dashboard-grid-overlay {
+  background-image:
+    linear-gradient(rgb(56 189 248 / 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(56 189 248 / 0.055) 1px, transparent 1px);
+  background-size: 1.5rem 1.5rem;
+  mask-image: linear-gradient(to bottom, black, transparent 74%);
+}
+
+.anatomy-orbit {
+  position: absolute;
+  border: 1px solid rgb(56 189 248 / 0.22);
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.anatomy-orbit-one {
+  width: 12rem;
+  height: 17rem;
+  transform: rotate(23deg);
+  animation: anatomy-drift 9s ease-in-out infinite;
+}
+
+.anatomy-orbit-two {
+  width: 17rem;
+  height: 11rem;
+  border-color: rgb(167 139 250 / 0.2);
+  transform: rotate(-28deg);
+  animation: anatomy-drift 11s ease-in-out -3s infinite reverse;
+}
+
+.anatomy-region {
+  stroke-width: 1.6;
+}
+
+.anatomy-region-idle {
+  fill: rgb(14 165 233 / 0.14);
+  stroke: rgb(56 189 248 / 0.5);
+}
+
+.anatomy-region-active {
+  fill: rgb(56 189 248 / 0.55);
+  stroke: rgb(224 242 254 / 0.95);
+  filter: drop-shadow(0 0 7px rgb(56 189 248 / 0.82));
+}
+
+.anatomy-region:focus-visible {
+  stroke: var(--color-primary-light);
+  stroke-width: 3;
+}
+
+@keyframes anatomy-drift {
+  0%, 100% { translate: 0 0; opacity: 0.55; }
+  50% { translate: 0 -8px; opacity: 0.82; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-hover,
+  .dashboard-progress,
+  .anatomy-orbit-one,
+  .anatomy-orbit-two,
+  .anatomy-region {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .dashboard-hover:hover {
+    transform: none;
+  }
+}

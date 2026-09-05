@@ -5,10 +5,12 @@ import { openVoiceAgent } from '../../utils/voiceEvents'
 interface VoiceAgentTriggerProps {
   compact?: boolean
   className?: string
+  label?: string
 }
 
-export function VoiceAgentTrigger({ compact = false, className = '' }: VoiceAgentTriggerProps) {
+export function VoiceAgentTrigger({ compact = false, className = '', label }: VoiceAgentTriggerProps) {
   const t = useT()
+  const buttonLabel = label ?? t['voice.open']
 
   return (
     <button
@@ -19,11 +21,11 @@ export function VoiceAgentTrigger({ compact = false, className = '' }: VoiceAgen
         compact ? 'h-11 w-11 rounded-full' : 'px-3 py-2 text-sm font-medium',
         className,
       ].join(' ')}
-      aria-label={t['voice.open']}
-      title={t['voice.open']}
+      aria-label={buttonLabel}
+      title={buttonLabel}
     >
       <Mic size={compact ? 18 : 15} />
-      {!compact && <span>{t['voice.open']}</span>}
+      {!compact && <span>{buttonLabel}</span>}
     </button>
   )
 }

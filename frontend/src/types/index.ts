@@ -77,7 +77,7 @@ export interface TimelineEvent {
   id: string
   profileId: string
   date: string
-  eventType: 'lab' | 'nutrition' | 'hydration' | 'ai_insight' | 'plan' | 'activity'
+  eventType: 'lab' | 'nutrition' | 'hydration' | 'ai_insight' | 'plan' | 'activity' | 'wearable' | 'cycle' | 'cycle_symptom'
   title: string
   description: string
   isAIGenerated: boolean
@@ -113,4 +113,35 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
   timestamp: string
+}
+
+export type InsightDomain = 'labs' | 'hydration' | 'sleep' | 'activity' | 'nutrition' | 'wearable' | 'cycle'
+
+export interface ObservedDataItem {
+  domain: InsightDomain
+  observation: string
+  value: string
+}
+
+export interface CrossDomainConnection {
+  domains: InsightDomain[]
+  relationship: string
+  explanation: string
+}
+
+export interface InsightPriority {
+  title: string
+  rationale: string
+  suggested_action: string
+  related_domains: InsightDomain[]
+  urgency: 'high' | 'medium' | 'low'
+}
+
+export interface StructuredInsight {
+  headline: string
+  summary: string
+  observed_data: ObservedDataItem[]
+  cross_domain_connections: CrossDomainConnection[]
+  priorities: InsightPriority[]
+  safety_note: string
 }

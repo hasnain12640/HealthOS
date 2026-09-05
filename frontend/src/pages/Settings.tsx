@@ -1,65 +1,103 @@
-import { useState } from 'react'
 import { PageWrapper, Card } from '../components/ui'
-import { Globe, Moon } from 'lucide-react'
+import { Globe, Moon, Sun, Watch, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { useSettingsStore } from '../store/settingsStore'
+import { useT } from '../i18n/useT'
 
 export function Settings() {
-  const [language] = useState('en')
+  const { language, theme, setLanguage, toggleTheme } = useSettingsStore()
+  const t = useT()
+  const navigate = useNavigate()
 
   return (
-    <PageWrapper title="Settings" subtitle="Preferences and application configuration">
+    <PageWrapper title={t['settings.title']} subtitle={t['settings.subtitle']}>
       <div className="space-y-4 max-w-lg">
         <Card>
-          <h3 className="text-[#F9FAFB] font-semibold text-sm mb-3 flex items-center gap-2">
-            <Globe size={14} className="text-[#0EA5E9]" /> Language
+          <h3 className="text-text-primary font-semibold text-sm mb-3 flex items-center gap-2">
+            <Globe size={14} className="text-primary" /> {t['settings.language']}
           </h3>
           <div className="flex gap-2">
-            {[
-              { value: 'en', label: 'English' },
-              { value: 'ur', label: 'اردو' },
-            ].map(({ value, label }) => (
-              <button
-                key={value}
-                className={[
-                  'px-4 py-2 rounded-lg border text-sm font-medium transition-colors',
-                  language === value
-                    ? 'bg-[#0EA5E9]/10 border-[#0EA5E9] text-[#0EA5E9]'
-                    : 'bg-[#1F2937] border-[#374151] text-[#9CA3AF] hover:border-[#0EA5E9]',
-                ].join(' ')}
-              >
-                {label}
-              </button>
-            ))}
+            <button
+              onClick={() => setLanguage('en')}
+              className={[
+                'px-4 py-2 rounded-lg border text-sm font-medium transition-colors',
+                language === 'en'
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-bg-elevated border-border-subtle text-text-secondary hover:border-primary',
+              ].join(' ')}
+            >
+              English
+            </button>
+            <button
+              onClick={() => setLanguage('ur')}
+              className={[
+                'px-4 py-2 rounded-lg border text-sm font-medium transition-colors',
+                language === 'ur'
+                  ? 'bg-primary/10 border-primary text-primary'
+                  : 'bg-bg-elevated border-border-subtle text-text-secondary hover:border-primary',
+              ].join(' ')}
+            >
+              اردو
+            </button>
           </div>
-          <p className="text-[#6B7280] text-xs mt-2">Urdu language support is coming in a future milestone.</p>
         </Card>
 
         <Card>
-          <h3 className="text-[#F9FAFB] font-semibold text-sm mb-3 flex items-center gap-2">
-            <Moon size={14} className="text-[#0EA5E9]" /> Appearance
+          <h3 className="text-text-primary font-semibold text-sm mb-3 flex items-center gap-2">
+            {theme === 'dark'
+              ? <Moon size={14} className="text-primary" />
+              : <Sun size={14} className="text-primary" />}
+            {t['settings.appearance']}
           </h3>
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-[#F9FAFB] text-sm">Dark Mode</p>
-              <p className="text-[#6B7280] text-xs">HealthOS uses dark mode by default</p>
+              <p className="text-text-primary text-sm">{t['settings.dark_mode']}</p>
+              <p className="text-text-muted text-xs">
+                {theme === 'dark' ? t['settings.dark_mode_desc'] : t['settings.light_mode_desc']}
+              </p>
             </div>
-            <div className="w-10 h-5 rounded-full bg-[#0EA5E9] flex items-center justify-end px-0.5">
+            <button
+              onClick={toggleTheme}
+              className={[
+                'w-10 h-5 rounded-full flex items-center px-0.5 transition-colors',
+                theme === 'dark' ? 'bg-primary justify-end' : 'bg-border-subtle justify-start',
+              ].join(' ')}
+            >
               <div className="w-4 h-4 rounded-full bg-white" />
-            </div>
+            </button>
           </div>
         </Card>
 
         <Card>
-          <h3 className="text-[#F9FAFB] font-semibold text-sm mb-3">AI Provider</h3>
-          <div className="bg-[#1F2937] rounded-lg p-3">
-            <p className="text-[#9CA3AF] text-xs mb-1">Current Provider</p>
-            <p className="text-[#F9FAFB] text-sm font-medium">Qwen (Alibaba Cloud)</p>
-            <p className="text-[#6B7280] text-xs mt-1">Configured via environment variable. Mock mode active for demo.</p>
+          <h3 className="text-text-primary font-semibold text-sm mb-3 flex items-center gap-2">
+            <Watch size={14} className="text-primary" /> {t['wearables.title']}
+          </h3>
+          <p className="text-text-secondary text-xs mb-3">{t['wearables.subtitle']}</p>
+          <button
+            onClick={() => navigate('/wearables')}
+            className="flex items-center gap-2 w-full bg-bg-elevated rounded-lg p-3 hover:border-primary border border-border-subtle transition-colors"
+          >
+            <Watch size={16} className="text-primary shrink-0" />
+            <div className="flex-1 text-start">
+              <p className="text-text-primary text-xs font-medium">{t['wearables.connect_demo']}</p>
+              <p className="text-text-muted text-[10px]">Fitbit Charge 6 · Mock Provider</p>
+            </div>
+            <ChevronRight size={14} className="text-text-muted" />
+          </button>
+        </Card>
+
+        <Card>
+          <h3 className="text-text-primary font-semibold text-sm mb-3">{t['settings.ai_provider']}</h3>
+          <div className="bg-bg-elevated rounded-lg p-3">
+            <p className="text-text-secondary text-xs mb-1">{t['settings.current_provider']}</p>
+            <p className="text-text-primary text-sm font-medium">Qwen (Alibaba Cloud)</p>
+            <p className="text-text-muted text-xs mt-1">{t['settings.provider_config']}</p>
           </div>
         </Card>
 
         <Card padding="sm">
-          <p className="text-[#6B7280] text-xs text-center">
-            HealthOS v0.7.0-milestone7 · Alibaba Cloud AI Hackathon Pakistan 2026
+          <p className="text-text-muted text-xs text-center">
+            {t['settings.version']}
           </p>
         </Card>
       </div>

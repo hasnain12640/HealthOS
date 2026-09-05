@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import inspect
@@ -14,7 +16,12 @@ from app.api.routes.analysis import router as analysis_router
 from app.api.routes.chat import router as chat_router
 from app.api.routes.plan import router as plan_router
 from app.api.routes.insights import router as insights_router
+from app.api.routes.wearables import router as wearables_router
+from app.api.routes.cycles import router as cycles_router
+from app.api.routes.voice import router as voice_router
 from app.services.seed import seed_demo_data
+
+logging.basicConfig(level=logging.INFO)
 
 
 def _check_schema():
@@ -32,7 +39,7 @@ def _check_schema():
 app = FastAPI(
     title="HealthOS API",
     description="HealthOS — Your Personal Health Intelligence Layer",
-    version="0.7.0-milestone7",
+    version="0.8.0-milestone8",
 )
 
 origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()]
@@ -83,6 +90,9 @@ app.include_router(analysis_router,  prefix="/api/v1/analysis",  tags=["Health A
 app.include_router(chat_router,      prefix="/api/v1/chat",      tags=["AI Chat"],          dependencies=protected_dependencies)
 app.include_router(plan_router,      prefix="/api/v1/plan",      tags=["AI 7-Day Plan"],    dependencies=protected_dependencies)
 app.include_router(insights_router,  prefix="/api/v1/insights",  tags=["AI Insights"],      dependencies=protected_dependencies)
+app.include_router(wearables_router, prefix="/api/v1/wearables", tags=["Wearables"],        dependencies=protected_dependencies)
+app.include_router(cycles_router,   prefix="/api/v1",         tags=["Women's Health"],    dependencies=protected_dependencies)
+app.include_router(voice_router,    prefix="/api/v1/voice",   tags=["Voice Agent"],       dependencies=protected_dependencies)
 
 
 @app.get("/")

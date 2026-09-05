@@ -3,6 +3,7 @@ import { PageWrapper, Button } from '../components/ui'
 import { Send, MessageCircle } from 'lucide-react'
 import type { ChatMessage } from '../types'
 import { sendChatMessage } from '../services/chatService'
+import { VoiceAgentTrigger } from '../components/voice/VoiceAgentTrigger'
 
 const welcomeMessage: ChatMessage = {
   id: 'msg-0',
@@ -111,7 +112,11 @@ export function AIAssistant() {
   }
 
   return (
-    <PageWrapper title="AI Health Assistant" subtitle="Ask questions about your health data">
+    <PageWrapper
+      title="AI Health Assistant"
+      subtitle="Ask questions about your health data"
+      action={<VoiceAgentTrigger />}
+    >
       <div className="flex flex-col h-[calc(100vh-180px)]">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">

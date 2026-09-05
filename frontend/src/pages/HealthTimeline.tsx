@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { PageWrapper, Card, Badge, Spinner } from '../components/ui'
 import { getDashboard } from '../services/dashboardService'
-import { FlaskConical, Apple, Droplets, Cpu, CalendarDays, Activity } from 'lucide-react'
+import { FlaskConical, Apple, Droplets, Cpu, CalendarDays, Activity, Watch, Heart, Stethoscope } from 'lucide-react'
 
 interface TimelineEvent {
   id: string
@@ -19,6 +19,9 @@ const iconMap: Record<string, React.ElementType> = {
   ai_insight: Cpu,
   plan: CalendarDays,
   activity: Activity,
+  wearable: Watch,
+  cycle: Heart,
+  cycle_symptom: Stethoscope,
 }
 
 const colorMap: Record<string, string> = {
@@ -28,6 +31,9 @@ const colorMap: Record<string, string> = {
   ai_insight: 'text-[#A78BFA] bg-[#A78BFA]/10 border-[#A78BFA]/20',
   plan: 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/20',
   activity: 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/20',
+  wearable: 'text-[#3B82F6] bg-[#3B82F6]/10 border-[#3B82F6]/20',
+  cycle: 'text-[#F472B6] bg-[#EC4899]/10 border-[#EC4899]/20',
+  cycle_symptom: 'text-[#F9A8D4] bg-[#EC4899]/10 border-[#EC4899]/20',
 }
 
 export function HealthTimeline() {

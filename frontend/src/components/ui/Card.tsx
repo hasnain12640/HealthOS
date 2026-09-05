@@ -19,9 +19,9 @@ export function Card({ children, className = '', padding = 'md', onClick }: Card
     <div
       onClick={onClick}
       className={[
-        'bg-[#111827] border border-[#1F2937] rounded-xl',
+        'bg-bg-surface border border-border rounded-xl',
         paddingStyles[padding],
-        onClick ? 'cursor-pointer hover:border-[#374151] transition-colors' : '',
+        onClick ? 'cursor-pointer hover:border-border-subtle transition-colors' : '',
         className,
       ].join(' ')}
     >
@@ -40,8 +40,8 @@ export function CardHeader({ title, subtitle, action }: CardHeaderProps) {
   return (
     <div className="flex items-start justify-between mb-4">
       <div>
-        <h3 className="text-[#F9FAFB] font-semibold text-sm">{title}</h3>
-        {subtitle && <p className="text-[#9CA3AF] text-xs mt-0.5">{subtitle}</p>}
+        <h3 className="text-text-primary font-semibold text-sm">{title}</h3>
+        {subtitle && <p className="text-text-secondary text-xs mt-0.5">{subtitle}</p>}
       </div>
       {action && <div>{action}</div>}
     </div>

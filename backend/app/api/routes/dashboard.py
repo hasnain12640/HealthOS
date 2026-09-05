@@ -14,8 +14,11 @@ from app.services.deterministic.health_calculations import (
     calculate_avg_sleep,
     calculate_hydration_today,
     calculate_nutrition_today,
+    assess_activity,
     generate_health_priorities,
 )
+from app.services.wearables import service as wearable_service
+from app.services.cycle import cycle_service
 
 router = APIRouter()
 
@@ -49,6 +52,7 @@ def get_dashboard(
     hydration_today = calculate_hydration_today(hydration_logs, today)
     nutrition_today = calculate_nutrition_today(nutrition_logs, today)
     avg_sleep = calculate_avg_sleep(sleep_logs)
+    activity_info = assess_activity(activity_logs)
 
     # --- Health priorities ---
     priorities = generate_health_priorities(
@@ -56,12 +60,21 @@ def get_dashboard(
         hydration_ml=hydration_today,
         hydration_target=hydration_target,
         avg_sleep=avg_sleep,
+        nutrition=nutrition_today,
+        activity_pct=activity_info["percent"],
+        bmi_category=bmi_data["category"],
     )
 
     # --- Timeline ---
     timeline = db.query(TimelineEvent).filter(
         TimelineEvent.profile_id == profile_id
     ).order_by(TimelineEvent.date.desc()).all()
+
+    # --- Wearable ---
+    wearable_summary = wearable_service.get_connected_summary(profile_id, db)
+
+    # --- Women's Health (female profiles only; None for everyone else) ---
+    womens_health = cycle_service.get_womens_health_summary(profile, db)
 
     return {
         "profile": {
@@ -149,9 +162,11 @@ def get_dashboard(
             }
             for t in timeline
         ],
+        "wearable": wearable_summary,
+        "womens_health": womens_health,
         "ai_insight": {
-            "text": "Based on your lab results and lifestyle data, your fatigue may be related to low hemoglobin, Vitamin D deficiency, and insufficient sleep. These findings can have multiple explanations. Consider discussing your results with a qualified healthcare professional.",
-            "generated_by": "mock",
+            "text": None,
+            "generated_by": "pending",
             "date": today,
         },
     }

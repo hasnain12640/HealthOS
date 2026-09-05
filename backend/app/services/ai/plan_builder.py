@@ -9,7 +9,8 @@ _DAY_LABELS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday
 _MOCK_PLAN = {
     "summary": (
         "This 7-day plan is based on Bilal's lab results (low hemoglobin and Vitamin D), "
-        "low daily hydration, insufficient sleep, and limited physical activity. "
+        "low daily hydration, insufficient sleep, and data from his Fitbit wearable "
+        "(8,426 steps and 67 bpm resting heart rate). "
         "All tips are general wellness guidance — not medical advice."
     ),
     "days": [
@@ -21,7 +22,7 @@ _MOCK_PLAN = {
                 "Replace one cup of chai with a glass of water",
             ],
             "hydration": "Drink 8 glasses of water — set a reminder every 2 hours",
-            "activity": "20-minute morning walk before breakfast",
+            "activity": "20-minute walk — beat yesterday's 8,426 steps on your Fitbit",
             "sleep": "Aim for bed by 10:30 PM — no screens after 10 PM",
         },
         {
@@ -51,8 +52,8 @@ _MOCK_PLAN = {
                 "Add leafy greens to any meal",
             ],
             "hydration": "Drink a glass of water with every meal",
-            "activity": "Rest day — 10 minutes of light stretching",
-            "sleep": "Aim for 7 full hours tonight — fixed wake time",
+            "activity": "Rest day — 10 minutes of light stretching, check Fitbit sleep score",
+            "sleep": "Aim for 7 full hours — your wearable recorded 6.7h recently",
         },
         {
             "day": 5, "day_label": "Friday", "focus": "Iron-rich Foods",
@@ -89,6 +90,36 @@ _MOCK_PLAN = {
 }
 
 
+def _wearable_lines(wearable_summary: dict | None) -> str:
+    if not wearable_summary:
+        return "  - No wearable device connected."
+    device_type = wearable_summary.get("device_type") or "wearable"
+    lines = [f"  - Device: {wearable_summary.get('device_name', 'Connected device')} ({device_type})"]
+    if wearable_summary.get("steps") is not None:
+        lines.append(f"  - Steps: {wearable_summary['steps']:,}")
+    if wearable_summary.get("resting_heart_rate") is not None:
+        lines.append(f"  - Resting HR: {wearable_summary['resting_heart_rate']} bpm")
+    if wearable_summary.get("sleep_hours") is not None:
+        lines.append(f"  - Sleep: {wearable_summary['sleep_hours']} hours")
+    if wearable_summary.get("sleep_score"):
+        lines.append(f"  - Sleep score: {wearable_summary['sleep_score']}")
+    if wearable_summary.get("active_calories") is not None:
+        lines.append(f"  - Active calories: {wearable_summary['active_calories']} kcal")
+    if wearable_summary.get("distance_km") is not None:
+        lines.append(f"  - Distance: {wearable_summary['distance_km']} km")
+    return "\n".join(lines)
+
+
+def _nutrition_lines(nutrition: dict | None) -> str:
+    if not nutrition:
+        return "  - No nutrition logged today."
+    return (
+        f"  - Calories today: {nutrition['total_calories']} kcal\n"
+        f"  - Protein: {nutrition['total_protein_g']} g, "
+        f"Carbs: {nutrition['total_carbs_g']} g, Fat: {nutrition['total_fat_g']} g"
+    )
+
+
 def build_plan_prompt(
     profile: HealthProfile,
     biomarkers: list[Biomarker],
@@ -97,6 +128,8 @@ def build_plan_prompt(
     avg_sleep: float,
     activity_pct: int,
     priorities: list[dict],
+    wearable_summary: dict | None = None,
+    nutrition: dict | None = None,
 ) -> tuple[str, str]:
     """
     Returns (system_prompt, user_message) for 7-day plan generation.
@@ -127,6 +160,12 @@ HEALTH CONTEXT:
 - Average sleep: {avg_sleep} hours/night (target 7–9 hours)
 - Weekly activity: {activity_pct}% of 150-minute target
 
+NUTRITION:
+{_nutrition_lines(nutrition)}
+
+WEARABLE DATA:
+{_wearable_lines(wearable_summary)}
+
 TOP HEALTH PRIORITIES:
 {priority_lines if priority_lines else "  None"}
 
@@ -138,6 +177,9 @@ RULES:
 5. Keep each tip under 15 words.
 6. The summary must mention the user's first name and reference their specific health data.
 7. Plan must address: iron/hemoglobin, Vitamin D, hydration, sleep, and activity.
+8. If wearable data is available, reference specific wearable metrics (steps, resting HR,
+   sleep hours) in relevant day recommendations.
+9. If nutrition data is available, reference actual intake levels where relevant.
 
 JSON SCHEMA (return exactly this structure):
 {{

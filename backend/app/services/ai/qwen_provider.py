@@ -16,7 +16,7 @@ class QwenProvider(BaseAIProvider):
         response = await self._client.chat.completions.create(
             model=settings.QWEN_MODEL,
             messages=full_messages,
-            max_tokens=600,
+            max_tokens=1200,
             temperature=0.4,
         )
         return response.choices[0].message.content or ""

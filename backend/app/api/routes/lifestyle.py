@@ -1,12 +1,12 @@
-import uuid
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-from app.core.database import get_db
-from app.core.dates import today_iso
+
 from app.api.deps import get_current_profile
+from app.core.database import get_db
 from app.models.models import NutritionLog, HydrationLog, SleepLog, ActivityLog, HealthProfile
+from app.services import lifestyle as lifestyle_service
 
 router = APIRouter()
 
@@ -48,11 +48,11 @@ def log_nutrition(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
-    entry = NutritionLog(id=str(uuid.uuid4()), profile_id=profile.id, **data.model_dump())
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return lifestyle_service.create_nutrition(
+        profile.id,
+        **data.model_dump(),
+        db=db,
+    )
 
 
 @router.get("/nutrition", response_model=list[NutritionLogOut])
@@ -92,11 +92,11 @@ def log_hydration(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
-    entry = HydrationLog(id=str(uuid.uuid4()), profile_id=profile.id, **data.model_dump())
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return lifestyle_service.create_hydration(
+        profile.id,
+        **data.model_dump(),
+        db=db,
+    )
 
 
 @router.get("/hydration", response_model=list[HydrationLogOut])
@@ -136,11 +136,11 @@ def log_sleep(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
-    entry = SleepLog(id=str(uuid.uuid4()), profile_id=profile.id, **data.model_dump())
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return lifestyle_service.create_sleep(
+        profile.id,
+        **data.model_dump(),
+        db=db,
+    )
 
 
 @router.get("/sleep", response_model=list[SleepLogOut])
@@ -183,11 +183,11 @@ def log_activity(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
-    entry = ActivityLog(id=str(uuid.uuid4()), profile_id=profile.id, **data.model_dump())
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return lifestyle_service.create_activity(
+        profile.id,
+        **data.model_dump(),
+        db=db,
+    )
 
 
 @router.get("/activity", response_model=list[ActivityLogOut])

@@ -2,7 +2,11 @@
 Seeds the Bilal Ahmed synthetic demo profile into SQLite on startup.
 Only runs if the profile does not already exist — safe to call on every restart.
 Demo credentials are read from environment; seeding is skipped if DEMO_PASSWORD is unset.
+
+Also seeds the Ayesha Khan female demo profile (Women's Health showcase),
+kept separate from the male demo and never modified by it.
 """
+from datetime import date, timedelta
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -11,10 +15,14 @@ from app.core.security import hash_password
 from app.models.models import (
     User, HealthProfile, LabReport, Biomarker,
     HydrationLog, NutritionLog, SleepLog, ActivityLog, TimelineEvent,
+    Cycle, PeriodDay, CycleSymptom,
 )
 
 DEMO_USER_ID = "demo-user-001"
 DEMO_PROFILE_ID = "demo-001"
+
+FEMALE_DEMO_USER_ID = "demo-user-002"
+FEMALE_DEMO_PROFILE_ID = "demo-002"
 
 
 def _refresh_demo_dates(db: Session) -> None:
@@ -66,6 +74,7 @@ def seed_demo_data(db: Session) -> None:
             existing_profile.user_id = user.id
         _refresh_demo_dates(db)
         db.commit()
+        seed_female_demo_data(db)
         return
 
     # --- Profile ---
@@ -189,3 +198,156 @@ def seed_demo_data(db: Session) -> None:
     db.add_all(timeline)
 
     db.commit()
+
+    seed_female_demo_data(db)
+
+
+# ── Female demo profile (Women's Health showcase) ────────────────────────────
+
+_AYESHA_CYCLE_LENGTH = 28
+_AYESHA_PERIOD_LENGTH = 5
+# Current cycle started 20 days ago → today is cycle day 21 (Luteal phase),
+# with the next period estimated at day 29 (~1 week away).
+_AYESHA_CURRENT_DAY = 20
+_AYESHA_CYCLES_COMPLETED = 4
+
+
+def _ayesha_cycle_dates() -> list[tuple[str, str | None]]:
+    """(start_date, end_date|None) for Ayesha's cycles, oldest first.
+
+    The last cycle is open and started 20 days ago, so the engine always
+    reports day 21 of a 28-day cycle (Luteal phase, next period estimated
+    at day 29) no matter when the demo is viewed.
+    """
+    today = date.today()
+    current_start = today - timedelta(days=_AYESHA_CURRENT_DAY)
+    total = _AYESHA_CYCLES_COMPLETED + 1
+    rows = []
+    for i in range(total):
+        start = current_start - timedelta(days=(total - 1 - i) * _AYESHA_CYCLE_LENGTH)
+        end = start + timedelta(days=_AYESHA_CYCLE_LENGTH) if i < total - 1 else None
+        rows.append((start.isoformat(), end.isoformat() if end else None))
+    return rows
+
+
+def _flow_levels() -> list[str]:
+    return ["light", "moderate", "heavy", "moderate", "light"]
+
+
+def _reset_ayesha_cycle_data(db: Session) -> None:
+    """Delete and recreate Ayesha's cycles/symptoms anchored to today, so the
+    demo always shows the intended cycle position. Only touches demo-002."""
+    for cycle in db.query(Cycle).filter(Cycle.profile_id == FEMALE_DEMO_PROFILE_ID).all():
+        db.query(PeriodDay).filter(PeriodDay.cycle_id == cycle.id).delete()
+        db.delete(cycle)
+    db.query(CycleSymptom).filter(CycleSymptom.profile_id == FEMALE_DEMO_PROFILE_ID).delete()
+    db.query(TimelineEvent).filter(
+        TimelineEvent.profile_id == FEMALE_DEMO_PROFILE_ID,
+        TimelineEvent.event_type.in_(["cycle", "cycle_symptom"]),
+    ).delete(synchronize_session=False)
+
+    dates = _ayesha_cycle_dates()
+    flows = _flow_levels()
+    for i, (start_iso, end_iso) in enumerate(dates):
+        cycle = Cycle(
+            id=f"demo-cycle-{i+1:03d}",
+            profile_id=FEMALE_DEMO_PROFILE_ID,
+            start_date=start_iso,
+            end_date=end_iso,
+            cycle_length=_AYESHA_CYCLE_LENGTH if end_iso else None,
+            period_length=_AYESHA_PERIOD_LENGTH,
+            notes="",
+        )
+        db.add(cycle)
+        db.flush()
+
+        start = date.fromisoformat(start_iso)
+        for d in range(_AYESHA_PERIOD_LENGTH):
+            db.add(PeriodDay(
+                id=f"demo-pd-{i+1:03d}-{d+1}",
+                cycle_id=cycle.id,
+                date=(start + timedelta(days=d)).isoformat(),
+                flow_level=flows[d % len(flows)],
+            ))
+
+        is_current = end_iso is None
+        db.add(TimelineEvent(
+            id=f"demo-tl-cycle-{i+1:03d}",
+            profile_id=FEMALE_DEMO_PROFILE_ID,
+            date=start_iso,
+            event_type="cycle",
+            title="Period started",
+            description=(
+                f"New cycle started ({_AYESHA_PERIOD_LENGTH} day period logged)."
+                if is_current else
+                f"Cycle ended after {_AYESHA_CYCLE_LENGTH} days."
+            ),
+            is_ai_generated=False,
+        ))
+
+    symptoms = [
+        ("demo-sym-001", days_ago_iso(1), "fatigue", "moderate"),
+        ("demo-sym-002", days_ago_iso(2), "bloating", "mild"),
+    ]
+    for sym_id, sym_date, sym_type, severity in symptoms:
+        db.add(CycleSymptom(
+            id=sym_id,
+            profile_id=FEMALE_DEMO_PROFILE_ID,
+            date=sym_date,
+            symptom_type=sym_type,
+            severity=severity,
+            notes="",
+        ))
+        label = {"fatigue": "Fatigue", "bloating": "Bloating"}[sym_type]
+        db.add(TimelineEvent(
+            id=f"demo-tl-{sym_id}",
+            profile_id=FEMALE_DEMO_PROFILE_ID,
+            date=sym_date,
+            event_type="cycle_symptom",
+            title="Symptom logged",
+            description=f"{label} ({severity})",
+            is_ai_generated=False,
+        ))
+
+
+def seed_female_demo_data(db: Session) -> None:
+    """Idempotent seed for the Ayesha Khan female demo profile. Independent of
+    the male (Bilal) demo — never creates or modifies it."""
+    if not settings.SEED_DEMO_DATA or not settings.DEMO_PASSWORD:
+        return
+
+    from app.services.wearables import service as wearable_service
+
+    user = db.query(User).filter(User.email == settings.FEMALE_DEMO_EMAIL).first()
+    if not user:
+        user = User(
+            id=FEMALE_DEMO_USER_ID,
+            email=settings.FEMALE_DEMO_EMAIL,
+            password_hash=hash_password(settings.DEMO_PASSWORD),
+            name="Ayesha Khan",
+        )
+        db.add(user)
+        db.flush()
+
+    profile = db.query(HealthProfile).filter(HealthProfile.id == FEMALE_DEMO_PROFILE_ID).first()
+    if not profile:
+        profile = HealthProfile(
+            id=FEMALE_DEMO_PROFILE_ID,
+            user_id=user.id,
+            user_name="Ayesha Khan",
+            age=28,
+            sex="female",
+            height_cm=161.0,
+            weight_kg=57.0,
+            blood_group="O+",
+            city="Lahore",
+            language="en",
+        )
+        db.add(profile)
+        db.flush()
+
+    _reset_ayesha_cycle_data(db)
+    db.commit()
+
+    # Connect the simulated Fitbit for the female demo (idempotent).
+    wearable_service.demo_connect(FEMALE_DEMO_PROFILE_ID, db)

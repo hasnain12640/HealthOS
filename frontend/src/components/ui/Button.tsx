@@ -11,10 +11,10 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
-  primary: 'bg-[#0EA5E9] hover:bg-[#0369A1] text-white border-transparent',
-  secondary: 'bg-transparent hover:bg-[#1F2937] text-[#0EA5E9] border-[#0EA5E9]',
-  ghost: 'bg-transparent hover:bg-[#1F2937] text-[#9CA3AF] border-transparent',
-  danger: 'bg-[#EF4444] hover:bg-[#DC2626] text-white border-transparent',
+  primary: 'bg-primary hover:bg-primary-dark text-white border-transparent',
+  secondary: 'bg-transparent hover:bg-bg-elevated text-primary border-primary',
+  ghost: 'bg-transparent hover:bg-bg-elevated text-text-secondary border-transparent',
+  danger: 'bg-danger hover:bg-danger-dark text-white border-transparent',
 }
 
 const sizeStyles: Record<ButtonSize, string> = {

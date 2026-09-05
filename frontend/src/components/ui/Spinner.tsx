@@ -9,7 +9,7 @@ export function Spinner({ size = 'md', label }: SpinnerProps) {
   return (
     <div className="flex flex-col items-center justify-center gap-3">
       <svg
-        className={`animate-spin text-[#0EA5E9] ${sizeMap[size]}`}
+        className={`animate-spin text-primary ${sizeMap[size]}`}
         fill="none"
         viewBox="0 0 24 24"
       >
@@ -20,14 +20,14 @@ export function Spinner({ size = 'md', label }: SpinnerProps) {
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
         />
       </svg>
-      {label && <p className="text-[#9CA3AF] text-sm">{label}</p>}
+      {label && <p className="text-text-secondary text-sm">{label}</p>}
     </div>
   )
 }
 
 export function FullPageSpinner({ label = 'Loading...' }: { label?: string }) {
   return (
-    <div className="flex items-center justify-center min-h-screen bg-[#0A0F1E]">
+    <div className="flex items-center justify-center min-h-screen bg-bg-base">
       <Spinner size="lg" label={label} />
     </div>
   )

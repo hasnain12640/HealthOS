@@ -17,7 +17,10 @@ import { ActivityPage } from './pages/Activity'
 import { AIAssistant } from './pages/AIAssistant'
 import { SevenDayPlan } from './pages/SevenDayPlan'
 import { Settings } from './pages/Settings'
+import { Wearables } from './pages/Wearables'
+import { WomensHealth } from './pages/WomensHealth'
 import { useAuthStore } from './store/authStore'
+import { useSettingsStore } from './store/settingsStore'
 
 function AuthBootstrap({ children }: { children: React.ReactNode }) {
   const bootstrap = useAuthStore(state => state.bootstrap)
@@ -29,10 +32,25 @@ function AuthBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function ThemeSync() {
+  const theme = useSettingsStore(s => s.theme)
+  const language = useSettingsStore(s => s.language)
+
+  useEffect(() => {
+    const root = document.documentElement
+    root.classList.toggle('light', theme === 'light')
+    root.setAttribute('dir', language === 'ur' ? 'rtl' : 'ltr')
+    root.setAttribute('lang', language)
+  }, [theme, language])
+
+  return null
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <AuthBootstrap>
+        <ThemeSync />
         <Routes>
           {/* Public pages — no app shell */}
           <Route path="/" element={<Welcome />} />
@@ -57,6 +75,8 @@ export default function App() {
               <Route path="/activity" element={<ActivityPage />} />
               <Route path="/assistant" element={<AIAssistant />} />
               <Route path="/plan" element={<SevenDayPlan />} />
+              <Route path="/wearables" element={<Wearables />} />
+              <Route path="/womens-health" element={<WomensHealth />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>

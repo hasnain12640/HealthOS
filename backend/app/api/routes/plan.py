@@ -7,17 +7,22 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.core.dates import today_iso
 from app.api.deps import get_current_profile
-from app.models.models import HealthProfile, LabReport, Biomarker, HydrationLog, SleepLog, ActivityLog
+from app.models.models import (
+    HealthProfile, LabReport, Biomarker, HydrationLog, SleepLog, ActivityLog, NutritionLog,
+)
 from app.services.ai.provider_factory import get_provider
 from app.services.ai.plan_builder import build_plan_prompt, get_mock_plan
 from app.services.deterministic.health_calculations import (
+    calculate_bmi,
     calculate_hydration_target,
     calculate_hydration_today,
     calculate_avg_sleep,
+    calculate_nutrition_today,
     generate_health_priorities,
     assess_activity,
     assess_hydration,
 )
+from app.services.wearables import service as wearable_service
 
 logger = logging.getLogger("healthos.plan")
 
@@ -53,19 +58,25 @@ async def generate_plan(
         .filter(ActivityLog.profile_id == profile_id)
         .order_by(ActivityLog.date.desc()).limit(7).all()
     )
+    nutrition_logs = db.query(NutritionLog).filter(NutritionLog.profile_id == profile_id).all()
 
     hydration_target = calculate_hydration_target(profile.weight_kg)
     hydration_ml = calculate_hydration_today(hydration_logs, today)
     avg_sleep = calculate_avg_sleep(sleep_logs)
     activity_info = assess_activity(activity_logs)
     hydration_info = assess_hydration(hydration_ml, hydration_target)
+    nutrition_today = calculate_nutrition_today(nutrition_logs, today)
+    bmi_data = calculate_bmi(profile.weight_kg, profile.height_cm)
+    wearable_summary = wearable_service.get_connected_summary(profile_id, db)
 
     priorities = generate_health_priorities(
         biomarkers=biomarkers,
         hydration_ml=hydration_ml,
         hydration_target=hydration_target,
         avg_sleep=avg_sleep,
+        nutrition=nutrition_today,
         activity_pct=activity_info["percent"],
+        bmi_category=bmi_data["category"],
     )
 
     system_prompt, user_message = build_plan_prompt(
@@ -76,6 +87,8 @@ async def generate_plan(
         avg_sleep=avg_sleep,
         activity_pct=activity_info["percent"],
         priorities=priorities,
+        wearable_summary=wearable_summary,
+        nutrition=nutrition_today,
     )
 
     used_provider = settings.AI_PROVIDER

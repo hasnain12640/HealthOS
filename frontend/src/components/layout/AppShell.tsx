@@ -2,12 +2,14 @@ import { useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
+import { VoiceAgentHost } from '../voice/VoiceAgentHost'
 
 export function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="flex h-screen bg-[#0A0F1E] overflow-hidden">
+    <div className="flex h-screen bg-bg-base overflow-hidden">
+      <VoiceAgentHost />
       {/* Desktop sidebar — always visible */}
       <div className="hidden lg:flex">
         <Sidebar />

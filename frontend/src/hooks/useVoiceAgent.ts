@@ -7,7 +7,7 @@ import {
   type VoiceCommandResult,
   type VoiceLanguage,
 } from '../services/voiceService'
-import { getBrowserSpeech, loadVoices, speakBrowserText } from '../utils/browserSpeech'
+import { diagnoseBrowserSpeech, getBrowserSpeech, loadVoices, speakBrowserText } from '../utils/browserSpeech'
 
 type VoiceStage = 'idle' | 'listening' | 'processing' | 'updating' | 'response' | 'confirmation' | 'speaking' | 'error'
 
@@ -81,6 +81,7 @@ export function useVoiceAgent({ languageHint, useBrowserRecognition, onCommand }
   const transcriptRef = useRef('')
   const discardRecordingRef = useRef(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const diagnosedRef = useRef(false)
 
   const releaseStream = useCallback(() => {
     streamRef.current?.getTracks().forEach(track => track.stop())
@@ -307,6 +308,10 @@ export function useVoiceAgent({ languageHint, useBrowserRecognition, onCommand }
       if (import.meta.env.DEV && list.length > 0) {
         // eslint-disable-next-line no-console
         console.log('[Mira TTS] voices updated', list.length, list.map(v => `${v.name} (${v.lang})`).slice(0, 5))
+        if (!diagnosedRef.current) {
+          diagnosedRef.current = true
+          void diagnoseBrowserSpeech()
+        }
       }
     }
 
