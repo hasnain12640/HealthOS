@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { PageWrapper, Card, Badge, Spinner } from '../components/ui'
 import { getDashboard } from '../services/dashboardService'
 import { FlaskConical, Apple, Droplets, Cpu, CalendarDays, Activity, Watch, Heart, Stethoscope } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 interface TimelineEvent {
   id: string
@@ -12,7 +13,7 @@ interface TimelineEvent {
   is_ai_generated: boolean
 }
 
-const iconMap: Record<string, React.ElementType> = {
+const iconMap: Record<string, LucideIcon> = {
   lab: FlaskConical,
   nutrition: Apple,
   hydration: Droplets,

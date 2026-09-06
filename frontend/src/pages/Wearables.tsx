@@ -17,12 +17,13 @@ import {
   Flame, Moon, MapPin, Droplets, Weight, Brain, Clock,
   CheckCircle2, XCircle, AlertTriangle, Zap,
 } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   CartesianGrid,
 } from 'recharts'
 
-const metricIcons: Record<string, React.ElementType> = {
+const metricIcons: Record<string, LucideIcon> = {
   steps: Footprints,
   active_calories: Flame,
   resting_heart_rate: Heart,

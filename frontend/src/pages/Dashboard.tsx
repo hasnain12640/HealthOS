@@ -195,7 +195,10 @@ export function Dashboard() {
     : activitySteps > 0 ? t['dashboard.recent_activity'] : t['dashboard.no_activity_data']
   const hydrationPercent = Math.min(hydration.percent, 100)
   const hydrationColor = hydration.percent >= 80 ? 'bg-accent' : hydration.percent >= 50 ? 'bg-warning' : 'bg-primary'
-  const isFemaleProfile = profile.sex === 'female' && womens_health != null
+  const isFemaleProfile = profile.sex === 'female'
+  const visibleTimeline = isFemaleProfile
+    ? timeline
+    : timeline.filter(event => event.event_type !== 'cycle' && event.event_type !== 'cycle_symptom')
 
   const contextPills = (
     <div className="flex max-w-md flex-wrap justify-end gap-2">
@@ -219,7 +222,7 @@ export function Dashboard() {
           <DashboardStat icon={Footprints} label={t['dashboard.activity']} value={activitySteps > 0 ? activitySteps.toLocaleString() : '—'} detail={activityDetail} tone="green" />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-[minmax(14rem,0.82fr)_minmax(0,1.55fr)_minmax(15rem,0.9fr)]">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-[minmax(14rem,0.82fr)_minmax(0,1.55fr)_minmax(15rem,0.9fr)] xl:items-start">
           <aside className="dashboard-glass space-y-4 rounded-3xl border border-border p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -332,9 +335,9 @@ export function Dashboard() {
               <div><p className="dashboard-eyebrow">{t['dashboard.recent_events']}</p><h2 className="mt-1 text-base font-semibold text-text-primary">{t['dashboard.health_timeline']}</h2></div>
               <button type="button" onClick={() => navigate('/timeline')} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>
             </div>
-            {timeline.length > 0 ? (
+            {visibleTimeline.length > 0 ? (
               <div className="relative mt-5 space-y-3 before:absolute before:inset-y-2 before:start-3 before:w-px before:bg-border">
-                {timeline.slice(0, 4).map(event => {
+                {visibleTimeline.slice(0, 4).map(event => {
                   const Icon = timelineIcons[event.event_type] ?? Activity
                   const color = timelineColors[event.event_type] ?? timelineColors.activity
                   return (
@@ -355,7 +358,7 @@ export function Dashboard() {
           </section>
         </div>
 
-        <DashboardInsight insightData={insightData} fallbackInsight={ai_insight} onAskAI={() => navigate('/assistant')} />
+        <DashboardInsight insightData={insightData} fallbackInsight={ai_insight} onAskAI={() => navigate('/assistant')} userSex={profile.sex as 'male' | 'female'} />
       </div>
     </PageWrapper>
   )

@@ -10,6 +10,7 @@ interface DashboardInsightProps {
   insightData: InsightData | null
   fallbackInsight: DashboardData['ai_insight']
   onAskAI: () => void
+  userSex?: 'male' | 'female'
 }
 
 const domainBadgeStyles: Record<InsightDomain, string> = {
@@ -30,8 +31,9 @@ function DomainBadge({ domain, label }: { domain: InsightDomain; label: string }
   )
 }
 
-export function DashboardInsight({ insightData, fallbackInsight, onAskAI }: DashboardInsightProps) {
+export function DashboardInsight({ insightData, fallbackInsight, onAskAI, userSex }: DashboardInsightProps) {
   const t = useT()
+  const showCycleContent = userSex === 'female'
   const domainLabel: Record<InsightDomain, string> = {
     labs: t['insight.domain_labs'],
     hydration: t['insight.domain_hydration'],
@@ -41,6 +43,18 @@ export function DashboardInsight({ insightData, fallbackInsight, onAskAI }: Dash
     wearable: t['insight.domain_wearable'],
     cycle: t['insight.domain_cycle'],
   }
+
+  const observedData = insightData?.insight
+    ? insightData.insight.observed_data.filter(item => showCycleContent || item.domain !== 'cycle')
+    : []
+  const crossDomainConnections = insightData?.insight
+    ? insightData.insight.cross_domain_connections.filter(connection =>
+        showCycleContent || !connection.domains.includes('cycle'))
+    : []
+  const priorities = insightData?.insight
+    ? insightData.insight.priorities.filter(priority =>
+        showCycleContent || !priority.related_domains.includes('cycle'))
+    : []
 
   return (
     <section className="dashboard-glass overflow-hidden rounded-3xl border border-primary/25 p-5 sm:p-6">
@@ -87,11 +101,11 @@ export function DashboardInsight({ insightData, fallbackInsight, onAskAI }: Dash
             <p className="mt-2 text-sm leading-relaxed text-text-secondary">{insightData.insight.summary}</p>
           </div>
 
-          {insightData.insight.observed_data.length > 0 && (
+          {observedData.length > 0 && (
             <div>
               <p className="dashboard-section-label">{t['dashboard.observed_data']}</p>
               <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
-                {insightData.insight.observed_data.map((observation, index) => (
+                {observedData.map((observation, index) => (
                   <div key={`${observation.domain}-${index}`} className="rounded-xl border border-border bg-bg-base/45 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-xs leading-snug text-text-secondary">{observation.observation}</p>
@@ -104,11 +118,11 @@ export function DashboardInsight({ insightData, fallbackInsight, onAskAI }: Dash
             </div>
           )}
 
-          {insightData.insight.cross_domain_connections.length > 0 && (
+          {crossDomainConnections.length > 0 && (
             <div>
               <p className="dashboard-section-label flex items-center gap-1.5"><Link2 size={12} />{t['insight.cross_domain_connections']}</p>
               <div className="mt-2 grid gap-2 xl:grid-cols-2">
-                {insightData.insight.cross_domain_connections.map((connection, index) => (
+                {crossDomainConnections.map((connection, index) => (
                   <div key={index} className="rounded-xl border border-border bg-bg-base/45 p-3">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {connection.domains.map((domain, domainIndex) => (
@@ -126,11 +140,11 @@ export function DashboardInsight({ insightData, fallbackInsight, onAskAI }: Dash
             </div>
           )}
 
-          {insightData.insight.priorities.length > 0 && (
+          {priorities.length > 0 && (
             <div>
               <p className="dashboard-section-label">{t['insight.ai_priorities']}</p>
               <div className="mt-2 grid gap-2 xl:grid-cols-2">
-                {insightData.insight.priorities.map((priority, index) => (
+                {priorities.map((priority, index) => (
                   <div key={index} className="rounded-xl border border-border bg-bg-base/45 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <p className="text-xs font-semibold text-text-primary">{priority.title}</p>
