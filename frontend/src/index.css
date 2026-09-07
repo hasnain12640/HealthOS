@@ -31,6 +31,13 @@
   --color-status-high: #EF4444;
   --color-status-critical: #DC2626;
 
+  --color-cycle: #EC4899;
+  --color-cycle-light: #F472B6;
+  --color-fertile: #A78BFA;
+  --color-fertile-light: #C4B5FD;
+
+  --color-anatomy-stage: #05080F;
+
   --font-sans: 'Inter', system-ui, sans-serif;
   --radius-card: 0.75rem;
   --radius-btn: 0.5rem;
@@ -53,6 +60,8 @@
 
   --color-border: #E2E8F0;
   --color-border-subtle: #CBD5E1;
+
+  --color-anatomy-stage: #F1F5F9;
 }
 
 *, *::before, *::after {
@@ -81,12 +90,12 @@ html[dir="rtl"] body {
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: var(--color-bg-surface); }
 ::-webkit-scrollbar-thumb { background: var(--color-border-subtle); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 
 /* === Light scrollbar === */
-:root.light ::-webkit-scrollbar-track { background: #F1F5F9; }
-:root.light ::-webkit-scrollbar-thumb { background: #CBD5E1; }
-:root.light ::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
+:root.light ::-webkit-scrollbar-track { background: var(--color-bg-elevated); }
+:root.light ::-webkit-scrollbar-thumb { background: var(--color-border-subtle); }
+:root.light ::-webkit-scrollbar-thumb:hover { background: var(--color-text-muted); }
 
 /* === Dashboard intelligence surface === */
 .dashboard-page {

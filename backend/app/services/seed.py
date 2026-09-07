@@ -6,7 +6,8 @@ Demo credentials are read from environment; seeding is skipped if DEMO_PASSWORD 
 Also seeds the Ayesha Khan female demo profile (Women's Health showcase),
 kept separate from the male demo and never modified by it.
 """
-from datetime import date, timedelta
+import random
+from datetime import date, datetime, time, timedelta
 from uuid import uuid4
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -16,7 +17,13 @@ from app.models.models import (
     User, HealthProfile, LabReport, Biomarker,
     HydrationLog, NutritionLog, SleepLog, ActivityLog, TimelineEvent,
     Cycle, PeriodDay, CycleSymptom,
+    WearableConnection, WearableMetric,
 )
+from app.services.deterministic.health_calculations import (
+    calculate_hydration_target,
+    assess_biomarker_status,
+)
+from app.services.deterministic.biomarker_parser import BIOMARKER_DEFAULTS
 
 DEMO_USER_ID = "demo-user-001"
 DEMO_PROFILE_ID = "demo-001"
@@ -49,6 +56,231 @@ def _refresh_demo_dates(db: Session) -> None:
     report = db.query(LabReport).filter(LabReport.id == "report-001").first()
     if report:
         report.report_date = days_ago_iso(1)
+
+    # Keep the 30-day demo history window current relative to today.
+    _clear_demo_historical_logs(db, DEMO_PROFILE_ID)
+    _seed_demo_history(db, DEMO_PROFILE_ID)
+
+
+# ── Deterministic 30-day demo history backfill ───────────────────────────────
+
+_DEMO_FOODS = [
+    ("Paratha with Chai", 380, 8, 48, 18),
+    ("Daal Chawal", 520, 18, 82, 12),
+    ("Chicken Karahi with Roti", 650, 42, 55, 22),
+    ("Aloo Keema", 480, 24, 52, 18),
+    ("Saiji with Naan", 620, 35, 68, 24),
+    ("Fruit Chaat", 180, 2, 42, 1),
+    ("Yogurt Lassi", 150, 6, 18, 5),
+    ("Boiled Eggs", 140, 12, 1, 10),
+    ("Chana Chaat", 260, 10, 40, 7),
+    ("Grilled Fish with Rice", 540, 38, 58, 14),
+]
+
+_DEMO_MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"]
+
+_DEMO_HYDRATION_SOURCES = ["water", "tea", "lassi", "water"]
+
+
+def _clear_demo_historical_logs(db: Session, profile_id: str) -> None:
+    """Remove historical demo logs older than today so the 30-day window can be
+    re-anchored freshly on every restart. Today is preserved."""
+    today = today_iso()
+
+    for model in (HydrationLog, NutritionLog, SleepLog, ActivityLog):
+        db.query(model).filter(
+            model.profile_id == profile_id,
+            model.date < today,
+        ).delete(synchronize_session=False)
+
+    conn = (
+        db.query(WearableConnection)
+        .filter(
+            WearableConnection.profile_id == profile_id,
+            WearableConnection.status == "connected",
+        )
+        .first()
+    )
+    if conn:
+        db.query(WearableMetric).filter(
+            WearableMetric.connection_id == conn.id,
+            WearableMetric.recorded_at < datetime.combine(date.today(), time.min),
+        ).delete(synchronize_session=False)
+
+
+def _seed_demo_history(db: Session, profile_id: str) -> None:
+    """Generate reproducible 30-day history for a demo profile.
+
+    Skips today and any date that already has real user data so the backfill
+    never overwrites manually logged records.
+    """
+    from app.services.wearables import service as wearable_service
+
+    profile = db.query(HealthProfile).filter(HealthProfile.id == profile_id).first()
+    if not profile:
+        return
+
+    rng = random.Random(f"{profile_id}-history-42")
+    today = today_iso()
+    target_ml = calculate_hydration_target(profile.weight_kg)
+
+    # Ensure a connected demo wearable exists; we'll mirror metrics into it.
+    conn = wearable_service.demo_connect(profile_id, db)
+    connection_id = conn.id
+
+    # Build date -> has-data maps to avoid overwriting existing records.
+    existing_hydration_dates = {
+        h.date for h in db.query(HydrationLog).filter(HydrationLog.profile_id == profile_id).all()
+    }
+    existing_nutrition_dates = {
+        n.date for n in db.query(NutritionLog).filter(NutritionLog.profile_id == profile_id).all()
+    }
+    existing_sleep_dates = {
+        s.date for s in db.query(SleepLog).filter(SleepLog.profile_id == profile_id).all()
+    }
+    existing_activity_dates = {
+        a.date for a in db.query(ActivityLog).filter(ActivityLog.profile_id == profile_id).all()
+    }
+
+    for i in range(1, 30):
+        d = days_ago_iso(i)
+        d_date = date.today() - timedelta(days=i)
+
+        # --- Hydration ---
+        if d not in existing_hydration_dates:
+            log_count = rng.randint(2, 4)
+            target_pct = rng.uniform(0.5, 1.1)
+            total_target = int(target_ml * target_pct)
+            portions = [rng.randint(200, 500) for _ in range(log_count)]
+            scale = total_target / sum(portions) if sum(portions) else 1
+            for idx in range(log_count):
+                db.add(HydrationLog(
+                    id=str(uuid4()),
+                    profile_id=profile_id,
+                    date=d,
+                    amount_ml=int(portions[idx] * scale),
+                    source=rng.choice(_DEMO_HYDRATION_SOURCES),
+                ))
+
+        # --- Nutrition ---
+        if d not in existing_nutrition_dates:
+            meal_count = rng.randint(2, 3)
+            chosen = rng.sample(_DEMO_FOODS, k=meal_count)
+            for idx, (food_name, cal, prot, carb, fat) in enumerate(chosen):
+                db.add(NutritionLog(
+                    id=str(uuid4()),
+                    profile_id=profile_id,
+                    date=d,
+                    meal_type=_DEMO_MEAL_TYPES[idx],
+                    food_name=food_name,
+                    quantity_g=rng.randint(180, 450),
+                    calories=int(cal * rng.uniform(0.85, 1.15)),
+                    protein_g=round(prot * rng.uniform(0.85, 1.15), 1),
+                    carbs_g=round(carb * rng.uniform(0.85, 1.15), 1),
+                    fat_g=round(fat * rng.uniform(0.85, 1.15), 1),
+                    is_pakistani_food=True,
+                ))
+
+        # --- Sleep ---
+        if d not in existing_sleep_dates:
+            db.add(SleepLog(
+                id=str(uuid4()),
+                profile_id=profile_id,
+                date=d,
+                hours_slept=round(rng.uniform(5.5, 8.0), 1),
+                quality=rng.randint(2, 4),
+            ))
+
+        # --- Activity ---
+        if d not in existing_activity_dates:
+            steps = rng.randint(1500, 9000)
+            db.add(ActivityLog(
+                id=str(uuid4()),
+                profile_id=profile_id,
+                date=d,
+                activity_type="Walking",
+                duration_min=max(10, int(steps / 120)),
+                steps=steps,
+                notes="Demo activity",
+            ))
+
+        # --- Wearable metrics (one snapshot per historical day) ---
+        recorded_at = datetime.combine(d_date, time(8, 0))
+        base_steps = rng.randint(3000, 9500)
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="steps",
+            value=float(base_steps),
+            unit="steps",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="active_calories",
+            value=float(max(50, int(base_steps * 0.055))),
+            unit="kcal",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="resting_heart_rate",
+            value=float(rng.randint(60, 75)),
+            unit="bpm",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="avg_heart_rate",
+            value=float(rng.randint(70, 85)),
+            unit="bpm",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="sleep",
+            value=round(rng.uniform(5.5, 7.8), 1),
+            unit="hours",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="distance",
+            value=round(base_steps * 0.0007, 1),
+            unit="km",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="water",
+            value=round(rng.uniform(1.0, 2.2), 1),
+            unit="L",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+        db.add(WearableMetric(
+            id=str(uuid4()),
+            connection_id=connection_id,
+            metric_type="weight",
+            value=round(profile.weight_kg + rng.uniform(-1.0, 1.0), 1),
+            unit="kg",
+            recorded_at=recorded_at,
+            source="mock",
+        ))
+
+    db.commit()
 
 
 def seed_demo_data(db: Session) -> None:
@@ -198,6 +430,10 @@ def seed_demo_data(db: Session) -> None:
     db.add_all(timeline)
 
     db.commit()
+
+    # Backfill 30 days of deterministic demo history for the male profile.
+    _clear_demo_historical_logs(db, DEMO_PROFILE_ID)
+    _seed_demo_history(db, DEMO_PROFILE_ID)
 
     seed_female_demo_data(db)
 
@@ -351,3 +587,7 @@ def seed_female_demo_data(db: Session) -> None:
 
     # Connect the simulated Fitbit for the female demo (idempotent).
     wearable_service.demo_connect(FEMALE_DEMO_PROFILE_ID, db)
+
+    # Backfill 30 days of deterministic demo history for the female profile.
+    _clear_demo_historical_logs(db, FEMALE_DEMO_PROFILE_ID)
+    _seed_demo_history(db, FEMALE_DEMO_PROFILE_ID)

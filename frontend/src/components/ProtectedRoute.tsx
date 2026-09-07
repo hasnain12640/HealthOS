@@ -8,7 +8,7 @@ export function ProtectedRoute() {
 
   if (!bootstrapped) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0B0F19]">
+      <div className="flex items-center justify-center h-screen bg-bg-base">
         <Spinner size="lg" label="Starting HealthOS…" />
       </div>
     )

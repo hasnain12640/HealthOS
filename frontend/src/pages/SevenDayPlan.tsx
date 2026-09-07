@@ -10,10 +10,10 @@ function ProviderBadge({ provider }: { provider: string }) {
     <span className={[
       'text-[10px] font-medium px-2 py-0.5 rounded-full border',
       isQwen
-        ? 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/20'
-        : 'text-[#6B7280] bg-[#374151] border-[#4B5563]',
+        ? 'text-accent bg-accent/10 border-accent/20'
+        : 'text-text-muted bg-bg-elevated border-border-subtle',
     ].join(' ')}>
-      {isQwen ? 'Qwen' : 'Mock'}
+      {isQwen ? 'Qwen' : 'HealthOS'}
     </span>
   )
 }
@@ -23,23 +23,23 @@ function DayCard({ day }: { day: DayPlan }) {
     <Card padding="md">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-[#0EA5E9] flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0">
             <span className="text-white text-xs font-bold">{day.day}</span>
           </div>
-          <p className="text-[#F9FAFB] font-medium text-sm">{day.dayLabel}</p>
+          <p className="text-text-primary font-medium text-sm">{day.dayLabel}</p>
         </div>
         <Badge label={day.focus} variant="info" />
       </div>
 
       <div className="space-y-2 text-xs">
-        <div className="bg-[#1F2937] rounded-lg p-2">
-          <p className="text-[#6B7280] uppercase tracking-wide text-[10px] mb-1.5 flex items-center gap-1">
+        <div className="bg-bg-elevated rounded-lg p-2">
+          <p className="text-text-muted uppercase tracking-wide text-[10px] mb-1.5 flex items-center gap-1">
             <CalendarDays size={10} /> Nutrition
           </p>
           <ul className="space-y-1">
             {day.nutrition.map((tip, i) => (
-              <li key={i} className="flex items-start gap-1.5 text-[#9CA3AF]">
-                <CheckCircle2 size={10} className="text-[#10B981] mt-0.5 shrink-0" />
+              <li key={i} className="flex items-start gap-1.5 text-text-secondary">
+                <CheckCircle2 size={10} className="text-accent mt-0.5 shrink-0" />
                 {tip}
               </li>
             ))}
@@ -50,9 +50,9 @@ function DayCard({ day }: { day: DayPlan }) {
           { label: 'Activity', value: day.activity },
           { label: 'Sleep', value: day.sleep },
         ].map(({ label, value }) => (
-          <div key={label} className="bg-[#1F2937] rounded-lg p-2">
-            <p className="text-[#6B7280] uppercase tracking-wide text-[10px] mb-1">{label}</p>
-            <p className="text-[#9CA3AF]">{value}</p>
+          <div key={label} className="bg-bg-elevated rounded-lg p-2">
+            <p className="text-text-muted uppercase tracking-wide text-[10px] mb-1">{label}</p>
+            <p className="text-text-secondary">{value}</p>
           </div>
         ))}
       </div>
@@ -100,20 +100,20 @@ export function SevenDayPlan() {
         {!plan && !loading && (
           <Card>
             <div className="flex flex-col items-center text-center py-6 gap-4">
-              <div className="w-12 h-12 rounded-xl bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center">
-                <Sparkles size={20} className="text-[#0EA5E9]" />
+              <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+                <Sparkles size={20} className="text-primary" />
               </div>
               <div>
-                <p className="text-[#F9FAFB] font-semibold mb-1">Generate Your 7-Day Wellness Plan</p>
-                <p className="text-[#9CA3AF] text-sm max-w-md">
+                <p className="text-text-primary font-semibold mb-1">Generate Your 7-Day Wellness Plan</p>
+                <p className="text-text-secondary text-sm max-w-md">
                   Your plan is personalised based on your lab results, hydration, sleep, and activity data — with Pakistani food and lifestyle context.
                 </p>
               </div>
-              {error && <p className="text-[#EF4444] text-sm">{error}</p>}
+              {error && <p className="text-danger text-sm">{error}</p>}
               <Button onClick={handleGenerate}>
                 <Sparkles size={14} /> Generate My Plan
               </Button>
-              <p className="text-[#6B7280] text-xs italic">
+              <p className="text-text-muted text-xs italic">
                 This plan provides general wellness guidance and does not substitute professional medical advice.
               </p>
             </div>
@@ -125,7 +125,7 @@ export function SevenDayPlan() {
           <Card>
             <div className="flex flex-col items-center py-10 gap-3">
               <Spinner size="lg" />
-              <p className="text-[#9CA3AF] text-sm">Generating your personalised plan…</p>
+              <p className="text-text-secondary text-sm">Generating your personalised plan…</p>
             </div>
           </Card>
         )}
@@ -136,16 +136,16 @@ export function SevenDayPlan() {
             {/* Summary card */}
             <Card>
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#0EA5E9]/10 border border-[#0EA5E9]/20 flex items-center justify-center shrink-0">
-                  <span className="text-[#0EA5E9] text-xs font-bold">AI</span>
+                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                  <span className="text-primary text-xs font-bold">AI</span>
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <p className="text-[#6B7280] text-xs">Generated by HealthOS AI · {generatedAt}</p>
+                    <p className="text-text-muted text-xs">Generated by HealthOS AI · {generatedAt}</p>
                     <ProviderBadge provider={provider} />
                   </div>
-                  <p className="text-[#F9FAFB] text-sm leading-relaxed">{plan.summary}</p>
-                  <p className="text-[#6B7280] text-xs mt-2 italic">
+                  <p className="text-text-primary text-sm leading-relaxed">{plan.summary}</p>
+                  <p className="text-text-muted text-xs mt-2 italic">
                     This plan provides general wellness guidance and does not substitute professional medical advice.
                   </p>
                 </div>

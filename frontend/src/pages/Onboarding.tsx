@@ -5,7 +5,7 @@ import { createProfile } from '../services/profileService'
 import { useAuthStore } from '../store/authStore'
 import { User, MapPin, Ruler, ChevronRight } from 'lucide-react'
 
-const steps = ['Basic Info', 'Body Metrics', 'Lifestyle', 'Done']
+const steps = ['Basic Info', 'Body Metrics']
 
 export function Onboarding() {
   const [step, setStep] = useState(0)
@@ -66,6 +66,8 @@ export function Onboarding() {
   }
 
   const handleCreateProfile = async () => {
+    const err = validateBody()
+    if (err) { setError(err); return }
     setSubmitting(true)
     setError('')
     try {
@@ -80,7 +82,7 @@ export function Onboarding() {
         language: form.language,
       })
       setProfile(profile)
-      setStep(3)
+      setStep(2)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
         ?? 'Could not create profile. Please try again.'
@@ -92,82 +94,84 @@ export function Onboarding() {
 
   if (!bootstrapped) {
     return (
-      <div className="min-h-screen bg-[#0A0F1E] flex items-center justify-center">
+      <div className="min-h-screen bg-bg-base flex items-center justify-center">
         <Spinner size="lg" label="Loading…" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#0A0F1E] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-bg-base flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         {/* Progress */}
-        <div className="flex items-center justify-between mb-8">
-          {steps.map((label, i) => (
-            <div key={label} className="flex items-center gap-1">
-              <div className={[
-                'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold',
-                i <= step ? 'bg-[#0EA5E9] text-white' : 'bg-[#1F2937] text-[#6B7280]',
-              ].join(' ')}>
-                {i + 1}
+        {step < steps.length && (
+          <div className="flex items-center justify-between mb-8">
+            {steps.map((label, i) => (
+              <div key={label} className="flex items-center gap-1">
+                <div className={[
+                  'w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold',
+                  i <= step ? 'bg-primary text-white' : 'bg-bg-elevated text-text-muted',
+                ].join(' ')}>
+                  {i + 1}
+                </div>
+                <span className={`text-xs hidden sm:block ${i <= step ? 'text-text-primary' : 'text-text-muted'}`}>
+                  {label}
+                </span>
+                {i < steps.length - 1 && <div className="w-8 h-px bg-border mx-1" />}
               </div>
-              <span className={`text-xs hidden sm:block ${i <= step ? 'text-[#F9FAFB]' : 'text-[#6B7280]'}`}>
-                {label}
-              </span>
-              {i < steps.length - 1 && <div className="w-8 h-px bg-[#1F2937] mx-1" />}
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         <Card>
           {step === 0 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <User size={18} className="text-[#0EA5E9]" />
-                <h2 className="text-[#F9FAFB] font-semibold">Basic Information</h2>
+                <User size={18} className="text-primary" />
+                <h2 className="text-text-primary font-semibold">Basic Information</h2>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Full Name</label>
+                  <label className="block text-text-secondary text-xs mb-1">Full Name</label>
                   <input
                     type="text"
                     value={form.user_name}
                     onChange={e => update('user_name', e.target.value)}
                     placeholder="e.g. Ahmed Khan"
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted outline-none focus:border-primary transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Age</label>
+                  <label className="block text-text-secondary text-xs mb-1">Age</label>
                   <input
                     type="number"
                     value={form.age}
                     onChange={e => update('age', e.target.value)}
                     placeholder="e.g. 34"
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted outline-none focus:border-primary transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Sex</label>
+                  <label className="block text-text-secondary text-xs mb-1">Sex</label>
                   <select
                     value={form.sex}
                     onChange={e => update('sex', e.target.value)}
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] outline-none focus:border-[#0EA5E9] transition-colors"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:border-primary transition-colors"
                   >
                     <option value="male">Male</option>
                     <option value="female">Female</option>
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">City</label>
+                  <label className="block text-text-secondary text-xs mb-1">City</label>
                   <div className="relative">
-                    <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#6B7280]" />
+                    <MapPin size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
                     <input
                       type="text"
                       value={form.city}
                       onChange={e => update('city', e.target.value)}
                       placeholder="e.g. Lahore, Karachi, Islamabad"
-                      className="w-full bg-[#1F2937] border border-[#374151] rounded-lg pl-8 pr-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors"
+                      className="w-full bg-bg-elevated border border-border-subtle rounded-lg pl-8 pr-3 py-2 text-sm text-text-primary placeholder-text-muted outline-none focus:border-primary transition-colors"
                     />
                   </div>
                 </div>
@@ -178,36 +182,36 @@ export function Onboarding() {
           {step === 1 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-4">
-                <Ruler size={18} className="text-[#0EA5E9]" />
-                <h2 className="text-[#F9FAFB] font-semibold">Body Metrics</h2>
+                <Ruler size={18} className="text-primary" />
+                <h2 className="text-text-primary font-semibold">Body Metrics</h2>
               </div>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Height (cm)</label>
+                  <label className="block text-text-secondary text-xs mb-1">Height (cm)</label>
                   <input
                     type="number"
                     value={form.height_cm}
                     onChange={e => update('height_cm', e.target.value)}
                     placeholder="e.g. 172"
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted outline-none focus:border-primary transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Weight (kg)</label>
+                  <label className="block text-text-secondary text-xs mb-1">Weight (kg)</label>
                   <input
                     type="number"
                     value={form.weight_kg}
                     onChange={e => update('weight_kg', e.target.value)}
                     placeholder="e.g. 82"
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary placeholder-text-muted outline-none focus:border-primary transition-colors"
                   />
                 </div>
                 <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Blood Group</label>
+                  <label className="block text-text-secondary text-xs mb-1">Blood Group</label>
                   <select
                     value={form.blood_group}
                     onChange={e => update('blood_group', e.target.value)}
-                    className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] outline-none focus:border-[#0EA5E9] transition-colors"
+                    className="w-full bg-bg-elevated border border-border-subtle rounded-lg px-3 py-2 text-sm text-text-primary outline-none focus:border-primary transition-colors"
                   >
                     {['A+', 'A−', 'B+', 'B−', 'AB+', 'AB−', 'O+', 'O−'].map(g => (
                       <option key={g} value={g}>{g}</option>
@@ -219,63 +223,37 @@ export function Onboarding() {
           )}
 
           {step === 2 && (
-            <div className="space-y-4">
-              <h2 className="text-[#F9FAFB] font-semibold mb-4">Lifestyle Snapshot</h2>
-              <p className="text-[#9CA3AF] text-sm">This helps HealthOS personalize your priorities and plan.</p>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Average sleep per night (hours)</label>
-                  <input type="number" placeholder="e.g. 7" className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Daily water intake (glasses)</label>
-                  <input type="number" placeholder="e.g. 8" className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] placeholder-[#6B7280] outline-none focus:border-[#0EA5E9] transition-colors" />
-                </div>
-                <div>
-                  <label className="block text-[#9CA3AF] text-xs mb-1">Activity level</label>
-                  <select className="w-full bg-[#1F2937] border border-[#374151] rounded-lg px-3 py-2 text-sm text-[#F9FAFB] outline-none focus:border-[#0EA5E9] transition-colors">
-                    <option>Sedentary (mostly sitting)</option>
-                    <option>Light (walking 1–3 days/week)</option>
-                    <option>Moderate (exercise 3–5 days/week)</option>
-                    <option>Active (exercise 6–7 days/week)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {step === 3 && (
             <div className="text-center py-4 space-y-4">
-              <div className="w-14 h-14 rounded-full bg-[#10B981]/10 border border-[#10B981]/20 flex items-center justify-center mx-auto">
-                <span className="text-[#10B981] text-2xl">✓</span>
+              <div className="w-14 h-14 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto">
+                <span className="text-accent text-2xl">✓</span>
               </div>
-              <h2 className="text-[#F9FAFB] font-semibold text-lg">Profile Created</h2>
-              <p className="text-[#9CA3AF] text-sm">Your HealthOS profile is ready. You can now upload lab reports and start tracking.</p>
+              <h2 className="text-text-primary font-semibold text-lg">Profile Created</h2>
+              <p className="text-text-secondary text-sm">Your HealthOS profile is ready. You can now upload lab reports and start tracking.</p>
             </div>
           )}
 
           {error && (
-            <div className="mt-4 bg-[#EF4444]/10 border border-[#EF4444]/20 rounded-lg p-3 text-[#EF4444] text-xs">
+            <div className="mt-4 bg-danger/10 border border-danger/20 rounded-lg p-3 text-danger text-xs">
               {error}
             </div>
           )}
 
           <div className="flex justify-between mt-6">
-            {step > 0 && step < 3 && (
+            {step > 0 && step < 2 && (
               <Button variant="ghost" onClick={() => setStep(s => s - 1)}>Back</Button>
             )}
             <div className="ml-auto">
-              {step < 2 && (
+              {step === 0 && (
                 <Button onClick={handleNext}>
                   Continue <ChevronRight size={14} />
                 </Button>
               )}
-              {step === 2 && (
+              {step === 1 && (
                 <Button onClick={handleCreateProfile} loading={submitting}>
                   Create Profile
                 </Button>
               )}
-              {step === 3 && (
+              {step === 2 && (
                 <Button onClick={() => navigate('/dashboard')}>
                   Go to Dashboard <ChevronRight size={14} />
                 </Button>

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Activity, Brain, Droplets, HeartPulse, Salad } from 'lucide-react'
+import { Activity, Brain, Droplets, HeartPulse, Salad, Info } from 'lucide-react'
 import { useT } from '../../i18n/useT'
 import type { DashboardData } from '../../services/dashboardService'
 
@@ -84,20 +84,10 @@ export function AnatomyExplorer({ data }: AnatomyExplorerProps) {
   return (
     <section className="dashboard-glass dashboard-anatomy-panel relative flex flex-col overflow-hidden rounded-3xl border border-primary/20 p-5 sm:p-6">
       <div className="pointer-events-none absolute inset-0 dashboard-grid-overlay opacity-50" />
-      <div className="relative flex items-start justify-between gap-4">
-        <div>
-          <p className="dashboard-eyebrow">{t['dashboard.anatomy_eyebrow']}</p>
-          <h2 className="mt-1 text-lg font-semibold text-text-primary">{t['dashboard.anatomy_title']}</h2>
-          <p className="mt-1 max-w-md text-xs leading-relaxed text-text-secondary">{t['dashboard.anatomy_disclaimer']}</p>
-        </div>
-        <span className="rounded-full border border-primary/20 bg-primary/10 px-2.5 py-1 text-[10px] font-medium text-primary">
-          {t['dashboard.anatomy_educational']}
-        </span>
-      </div>
 
-      <div className="relative mt-4 grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:items-start">
-        <div className="relative flex min-h-[26rem] w-full flex-col sm:min-h-[32rem] lg:min-h-[36rem]">
-          <div className="anatomy-stage relative flex flex-1 items-center justify-center overflow-hidden rounded-2xl border border-primary/15 bg-[#05080f]">
+      <div className="relative grid min-h-0 flex-1 gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,7rem)] lg:items-start">
+        <div className="relative flex min-h-[20rem] w-full flex-col sm:min-h-[26rem] lg:min-h-[30rem]">
+          <div className="anatomy-stage relative flex flex-1 items-center justify-center overflow-hidden rounded-2xl border border-primary/15 bg-anatomy-stage">
             <img
               src="/assets/anatomy/healthos-anatomy.png"
               alt={t['dashboard.anatomy_svg_label']}
@@ -106,7 +96,7 @@ export function AnatomyExplorer({ data }: AnatomyExplorerProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 lg:grid-cols-1 lg:content-start">
+        <div className="flex flex-row flex-wrap gap-2 lg:flex-col lg:flex-nowrap">
           {(Object.keys(systems) as SystemKey[]).map(system => {
             const Icon = systemIcons[system]
             const isSelected = selectedSystem === system
@@ -117,7 +107,7 @@ export function AnatomyExplorer({ data }: AnatomyExplorerProps) {
                 onClick={() => setSelectedSystem(system)}
                 aria-pressed={isSelected}
                 className={[
-                  'rounded-lg border px-2.5 py-2 text-start text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
+                  'rounded-full border px-3 py-2 text-start text-xs transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary',
                   isSelected
                     ? 'border-primary/50 bg-primary/15 text-text-primary shadow-[0_0_16px_rgba(14,165,233,0.16)]'
                     : 'border-border bg-bg-base/40 text-text-secondary hover:border-primary/30 hover:text-text-primary',
@@ -148,6 +138,11 @@ export function AnatomyExplorer({ data }: AnatomyExplorerProps) {
           ))}
         </div>
       </div>
+
+      <p className="relative mt-3 flex items-center gap-1.5 text-[10px] text-text-muted">
+        <Info size={11} />
+        {t['dashboard.anatomy_disclaimer']}
+      </p>
     </section>
   )
 }

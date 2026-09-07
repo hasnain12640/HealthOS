@@ -37,13 +37,42 @@ const metricIcons: Record<string, LucideIcon> = {
 
 const metricColors: Record<string, string> = {
   steps: 'text-primary',
-  active_calories: 'text-[#F59E0B]',
-  resting_heart_rate: 'text-[#EF4444]',
-  avg_heart_rate: 'text-[#EC4899]',
-  sleep: 'text-[#A78BFA]',
+  active_calories: 'text-status-low',
+  resting_heart_rate: 'text-status-high',
+  avg_heart_rate: 'text-status-high',
+  sleep: 'text-primary-light',
   distance: 'text-accent',
   water: 'text-primary-light',
   weight: 'text-text-secondary',
+}
+
+const providerLabels: Record<string, string> = {
+  fitbit_mock: 'Fitbit (Demo)',
+}
+
+const deviceTypeLabels: Record<string, string> = {
+  fitness_tracker: 'Fitness Tracker',
+}
+
+function readableProvider(value: string) {
+  return providerLabels[value] ?? value.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+function readableDeviceType(value: string) {
+  return deviceTypeLabels[value] ?? value.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+}
+
+function dedupeSyncs(syncs: WearableSyncHistoryItem[]): WearableSyncHistoryItem[] {
+  const seen = new Set<string>()
+  const result: WearableSyncHistoryItem[] = []
+  for (let i = syncs.length - 1; i >= 0; i--) {
+    const s = syncs[i]
+    const key = `${s.status}-${s.records_synced}-${s.started_at.slice(0, 16)}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    result.unshift(s)
+  }
+  return result
 }
 
 function formatMetricValue(metricType: string, value: number, unit: string): { text: string; hasInlineUnit: boolean } {
@@ -208,7 +237,7 @@ export function Wearables() {
                     <Badge label="Connected" variant="normal" size="sm" />
                   </div>
                   <p className="text-text-secondary text-xs mt-0.5">
-                    {device.device_type} · {device.provider.replace('_mock', '')}
+                    {readableDeviceType(device.device_type)} · {readableProvider(device.provider)}
                   </p>
                   <p className="text-text-muted text-xs mt-0.5">
                     {t['wearables.last_synced']} {timeAgo(device.last_synced_at)}
@@ -283,7 +312,7 @@ export function Wearables() {
                             className="h-full rounded-full transition-all duration-500"
                             style={{
                               width: `${pct}%`,
-                              backgroundColor: pct >= 80 ? '#10B981' : pct >= 50 ? '#F59E0B' : '#EF4444',
+                              backgroundColor: pct >= 80 ? 'var(--color-status-normal)' : pct >= 50 ? 'var(--color-status-low)' : 'var(--color-status-high)',
                             }}
                           />
                         </div>
@@ -312,15 +341,15 @@ export function Wearables() {
             <div className="h-48 -ml-2">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={weekly} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" vertical={false} />
                   <XAxis
                     dataKey="day"
-                    tick={{ fill: '#94A3B8', fontSize: 11 }}
+                    tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fill: '#94A3B8', fontSize: 11 }}
+                    tick={{ fill: 'var(--color-text-muted)', fontSize: 11 }}
                     axisLine={false}
                     tickLine={false}
                     width={40}
@@ -328,18 +357,18 @@ export function Wearables() {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#1E293B',
-                      border: '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: 'var(--color-bg-elevated)',
+                      border: '1px solid var(--color-border-subtle)',
                       borderRadius: '8px',
                       fontSize: '12px',
                     }}
-                    labelStyle={{ color: '#CBD5E1' }}
-                    itemStyle={{ color: '#60A5FA' }}
+                    labelStyle={{ color: 'var(--color-text-secondary)' }}
+                    itemStyle={{ color: 'var(--color-primary)' }}
                     formatter={(value) => [Number(value).toLocaleString(), t['wearables.steps']]}
                   />
                   <Bar
                     dataKey="steps"
-                    fill="#3B82F6"
+                    fill="var(--color-primary)"
                     radius={[4, 4, 0, 0]}
                     maxBarSize={40}
                   />
@@ -390,14 +419,14 @@ export function Wearables() {
                   <Watch size={14} className="text-primary" />
                   <span className="text-text-secondary text-xs">{device.device_name}</span>
                 </div>
-                <span className="text-text-muted text-[10px] font-mono">{device.provider}</span>
+                <span className="text-text-muted text-[10px] font-mono">{readableProvider(device.provider)}</span>
               </div>
               <div className="flex items-center justify-between py-2">
                 <div className="flex items-center gap-2">
                   <Zap size={14} className="text-accent" />
-                  <span className="text-text-secondary text-xs">HealthOS AI Engine</span>
+                  <span className="text-text-secondary text-xs">HealthOS Intelligence Engine</span>
                 </div>
-                <span className="text-text-muted text-[10px] font-mono">deterministic + mock</span>
+                <span className="text-text-muted text-[10px] font-mono">Deterministic + Demo</span>
               </div>
             </div>
           </Card>
@@ -411,7 +440,7 @@ export function Wearables() {
               <h3 className="text-text-primary font-semibold text-sm">{t['wearables.sync_history']}</h3>
             </div>
             <div className="space-y-2">
-              {syncs.slice(0, 5).map(s => (
+              {dedupeSyncs(syncs).slice(0, 5).map(s => (
                 <div key={s.id} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
                   <div className="flex items-center gap-2">
                     {s.status === 'success' ? (

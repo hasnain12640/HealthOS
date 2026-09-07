@@ -80,7 +80,7 @@ export function Settings() {
             <Watch size={16} className="text-primary shrink-0" />
             <div className="flex-1 text-start">
               <p className="text-text-primary text-xs font-medium">{t['wearables.connect_demo']}</p>
-              <p className="text-text-muted text-[10px]">Fitbit Charge 6 · Mock Provider</p>
+              <p className="text-text-muted text-[10px]">Fitbit Charge 6 · Demo Provider</p>
             </div>
             <ChevronRight size={14} className="text-text-muted" />
           </button>

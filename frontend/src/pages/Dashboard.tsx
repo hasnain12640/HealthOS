@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Activity, AlertTriangle, Apple, Bot, CalendarDays, ChevronRight, CirclePlus, Clock3,
-  Droplets, Flame, FlaskConical, Footprints, Heart, HeartPulse, Moon, Watch,
+  Activity, AlertTriangle, Apple, BedDouble, Bot, CalendarDays, ChevronRight, CirclePlus, Clock3,
+  Droplets, Flame, FlaskConical, Footprints, Heart, HeartPulse, Moon, Upload, Watch,
 } from 'lucide-react'
 import { Badge, PageWrapper, Spinner } from '../components/ui'
 import { AnatomyExplorer } from '../components/dashboard/AnatomyExplorer'
@@ -31,12 +31,12 @@ const timelineColors: Record<string, string> = {
   lab: 'text-primary border-primary/25 bg-primary/10',
   nutrition: 'text-accent border-accent/25 bg-accent/10',
   hydration: 'text-primary-light border-primary-light/25 bg-primary-light/10',
-  ai_insight: 'text-[#A78BFA] border-[#A78BFA]/25 bg-[#A78BFA]/10',
+  ai_insight: 'text-primary-light border-primary-light/25 bg-primary-light/10',
   plan: 'text-warning border-warning/25 bg-warning/10',
   activity: 'text-accent border-accent/25 bg-accent/10',
   wearable: 'text-primary border-primary/25 bg-primary/10',
-  cycle: 'text-[#F472B6] border-[#F472B6]/25 bg-[#F472B6]/10',
-  cycle_symptom: 'text-[#F9A8D4] border-[#F9A8D4]/25 bg-[#F9A8D4]/10',
+  cycle: 'text-status-high border-status-high/25 bg-status-high/10',
+  cycle_symptom: 'text-status-low border-status-low/25 bg-status-low/10',
 }
 
 function formatLiters(milliliters: number) {
@@ -50,28 +50,91 @@ function formatSyncTime(value: string) {
     : new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit', month: 'short', day: 'numeric' }).format(date)
 }
 
-function DashboardStat({ icon: Icon, label, value, detail, tone = 'primary' }: {
+function formatEventDate(value: string) {
+  const date = new Date(value)
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat(undefined, { hour: 'numeric', minute: '2-digit' }).format(date)
+}
+
+function CircularPercent({ percent, tone = 'primary' }: { percent: number; tone?: 'primary' | 'accent' }) {
+  const size = 44
+  const stroke = 4
+  const radius = (size - stroke) / 2
+  const circumference = radius * 2 * Math.PI
+  const offset = circumference - (Math.min(percent, 100) / 100) * circumference
+  const colorClass = tone === 'accent' ? 'text-accent' : 'text-primary'
+
+  return (
+    <div className="relative flex items-center justify-center" style={{ width: size, height: size }}>
+      <svg className="-rotate-90" width={size} height={size}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          fill="transparent"
+          className="text-bg-elevated"
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="currentColor"
+          strokeWidth={stroke}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className={`${colorClass} transition-all duration-500`}
+        />
+      </svg>
+      <span className="absolute text-[10px] font-semibold text-text-primary">{Math.round(percent)}%</span>
+    </div>
+  )
+}
+
+function DashboardStat({
+  icon: Icon,
+  label,
+  value,
+  detail,
+  tone = 'primary',
+  badge,
+  circularPercent,
+}: {
   icon: IconType
   label: string
   value: string
   detail: string
   tone?: 'primary' | 'violet' | 'cyan' | 'green'
+  badge?: { label: string; variant: 'high' | 'low' | 'normal' }
+  circularPercent?: number
 }) {
   const toneClass = {
     primary: 'border-primary/25 bg-primary/10 text-primary',
-    violet: 'border-[#A78BFA]/25 bg-[#A78BFA]/10 text-[#A78BFA]',
+    violet: 'border-primary-light/25 bg-primary-light/10 text-primary-light',
     cyan: 'border-primary-light/25 bg-primary-light/10 text-primary-light',
     green: 'border-accent/25 bg-accent/10 text-accent',
   }[tone]
 
   return (
     <div className="dashboard-glass dashboard-hover rounded-2xl border border-border p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex items-start justify-between gap-3">
         <span className={`flex h-9 w-9 items-center justify-center rounded-xl border ${toneClass}`}><Icon size={16} /></span>
-        <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{label}</span>
+        <div className="flex flex-col items-end gap-1.5">
+          <span className="text-[10px] uppercase tracking-[0.14em] text-text-muted">{label}</span>
+          {badge && <Badge label={badge.label} variant={badge.variant} size="sm" />}
+        </div>
       </div>
-      <p className="mt-4 text-2xl font-semibold tracking-tight text-text-primary">{value}</p>
-      <p className="mt-1 text-xs text-text-secondary">{detail}</p>
+      <div className="mt-3 flex items-end justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-2xl font-semibold tracking-tight text-text-primary">{value}</p>
+          <p className="mt-0.5 text-xs text-text-secondary">{detail}</p>
+        </div>
+        {circularPercent != null && <CircularPercent percent={circularPercent} tone={tone === 'cyan' ? 'primary' : 'accent'} />}
+      </div>
     </div>
   )
 }
@@ -93,6 +156,137 @@ function PriorityCard({ priority }: { priority: DashboardData['priorities'][0] }
       <p className="mt-2 text-xs leading-relaxed text-text-secondary">{priority.observed_data}</p>
       <p className="mt-2 rounded-lg border border-accent/15 bg-accent/5 px-2.5 py-2 text-xs leading-relaxed text-text-secondary">{priority.suggested_action}</p>
     </div>
+  )
+}
+
+function MetricCell({ icon: Icon, label, value }: { icon: IconType; label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-bg-base/45 p-2.5">
+      <div className="flex items-center gap-1.5 text-text-muted"><Icon size={12} className="text-primary" /><span className="truncate text-[10px]">{label}</span></div>
+      <p className="mt-1 truncate text-sm font-semibold text-text-primary" title={value}>{value}</p>
+    </div>
+  )
+}
+
+function LatestLabsCard({ labSummary }: { labSummary: DashboardData['lab_summary'] }) {
+  const t = useT()
+  const navigate = useNavigate()
+
+  return (
+    <section className="dashboard-glass overflow-hidden rounded-3xl border border-border">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
+        <div className="flex items-center gap-2"><FlaskConical size={15} className="text-primary" /><h2 className="text-sm font-semibold text-text-primary">{t['dashboard.latest_labs']}</h2></div>
+        <button type="button" onClick={() => navigate('/lab-reports')} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>
+      </div>
+      {labSummary.report_id ? (
+        <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-3">
+          {labSummary.biomarkers.slice(0, 6).map(biomarker => (
+            <div key={biomarker.id} className="min-w-0 bg-bg-surface p-4">
+              <p className="truncate text-[11px] text-text-muted" title={biomarker.name}>{biomarker.name}</p>
+              <p className="mt-1 text-sm font-semibold text-text-primary">{biomarker.value} <span className="text-[10px] font-normal text-text-muted">{biomarker.unit}</span></p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Badge label={biomarker.status} variant={biomarker.status} size="sm" />
+                {(biomarker.reference_low != null || biomarker.reference_high != null) && <span className="text-[10px] text-text-muted">{biomarker.reference_low ?? '—'}–{biomarker.reference_high ?? '—'}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center p-6 text-center">
+          <FlaskConical size={24} className="text-text-muted" />
+          <p className="mt-3 text-xs font-medium text-text-primary">{t['dashboard.no_lab_data']}</p>
+          <p className="mt-1 max-w-xs text-xs leading-relaxed text-text-secondary">{t['dashboard.no_lab_reports_desc']}</p>
+          <div className="mt-4 flex w-full max-w-xs flex-col gap-2">
+            <button type="button" onClick={() => navigate('/lab-reports')} className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-white transition-colors hover:bg-primary-dark"><Upload size={14} />{t['dashboard.upload_report']}</button>
+            <button type="button" onClick={() => navigate('/lab-reports')} className="inline-flex items-center justify-center gap-2 rounded-lg border border-border-subtle bg-bg-base/50 px-3 py-2 text-xs font-medium text-text-primary transition-colors hover:border-primary/40 hover:text-primary">{t['dashboard.add_manually']}</button>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function NutritionCard({ nutrition }: { nutrition: DashboardData['nutrition'] }) {
+  const t = useT()
+
+  return (
+    <section className="dashboard-glass overflow-hidden rounded-3xl border border-border p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2"><Apple size={15} className="text-accent" /><h2 className="text-sm font-semibold text-text-primary">{t['nav.nutrition']}</h2></div>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-base/50 px-2 py-0.5 text-[10px] text-text-secondary"><CalendarDays size={10} />{t['dashboard.today']}</span>
+      </div>
+      <div className="mt-4 flex flex-col items-center">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-bg-elevated">
+          <span className="text-xl font-semibold text-text-primary">{nutrition.total_calories}</span>
+          <span className="absolute -bottom-1 text-[9px] text-text-muted">{t['dashboard.daily_goal']}</span>
+        </div>
+      </div>
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        <MacroCell label={t['dashboard.protein']} value={`${nutrition.total_protein_g}g`} color="bg-status-normal" />
+        <MacroCell label={t['dashboard.carbs']} value={`${nutrition.total_carbs_g}g`} color="bg-primary-light" />
+        <MacroCell label={t['dashboard.fat']} value={`${nutrition.total_fat_g}g`} color="bg-warning" />
+      </div>
+    </section>
+  )
+}
+
+function MacroCell({ label, value, color }: { label: string; value: string; color: string }) {
+  return (
+    <div className="flex flex-col items-center gap-1 rounded-xl bg-bg-base/45 py-2">
+      <div className="flex items-center gap-1"><span className={`h-1.5 w-1.5 rounded-full ${color}`} /><span className="text-[10px] text-text-secondary">{label}</span></div>
+      <span className="text-sm font-semibold text-text-primary">{value}</span>
+    </div>
+  )
+}
+
+function ActivityCard({ activitySteps, wearable }: { activitySteps: number; wearable: DashboardData['wearable'] }) {
+  const t = useT()
+
+  return (
+    <section className="dashboard-glass overflow-hidden rounded-3xl border border-border p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2"><Activity size={15} className="text-accent" /><h2 className="text-sm font-semibold text-text-primary">{t['nav.activity']}</h2></div>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-base/50 px-2 py-0.5 text-[10px] text-text-secondary"><CalendarDays size={10} />{t['dashboard.today']}</span>
+      </div>
+      {activitySteps > 0 ? (
+        <div className="mt-4">
+          <p className="text-2xl font-semibold text-text-primary">{activitySteps.toLocaleString()}</p>
+          <p className="text-xs text-text-secondary">{t['wearables.metric_steps']}</p>
+          {wearable?.active_calories != null && (
+            <div className="mt-3 flex items-center gap-2 rounded-xl bg-bg-base/45 px-3 py-2">
+              <Flame size={14} className="text-warning" />
+              <span className="text-xs text-text-secondary">{wearable.active_calories} {t['wearables.metric_active_calories']}</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="mt-4 flex flex-col items-center rounded-2xl border border-dashed border-border-subtle bg-bg-base/45 p-4 text-center">
+          <Activity size={24} className="text-text-muted" />
+          <p className="mt-2 text-xs font-medium text-text-primary">{t['dashboard.no_activity_data']}</p>
+          <p className="mt-1 text-xs leading-relaxed text-text-secondary">{t['dashboard.start_moving']}</p>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function SleepCard({ sleep }: { sleep: DashboardData['sleep'] }) {
+  const t = useT()
+
+  return (
+    <section className="dashboard-glass overflow-hidden rounded-3xl border border-border p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2"><Moon size={15} className="text-primary-light" /><h2 className="text-sm font-semibold text-text-primary">{t['dashboard.sleep']}</h2></div>
+        <span className="inline-flex items-center gap-1 rounded-full border border-border-subtle bg-bg-base/50 px-2 py-0.5 text-[10px] text-text-secondary"><CalendarDays size={10} />{t['dashboard.today']}</span>
+      </div>
+      <div className="mt-4 flex flex-col items-center">
+        <div className="relative flex h-24 w-24 items-center justify-center rounded-full border-4 border-bg-elevated">
+          <BedDouble size={20} className="absolute top-5 text-text-muted" />
+          <span className="mt-4 text-xl font-semibold text-text-primary">{sleep.avg_hours}h</span>
+        </div>
+        <p className="mt-2 text-xs text-text-secondary">{t['common.of']} {sleep.target_hours}h {t['dashboard.target'].toLowerCase()}</p>
+      </div>
+    </section>
   )
 }
 
@@ -185,7 +379,7 @@ export function Dashboard() {
     )
   }
 
-  const { profile, lab_summary, hydration, sleep, activity, priorities, timeline, wearable, womens_health, ai_insight } = data
+  const { profile, lab_summary, hydration, nutrition, sleep, activity, priorities, timeline, wearable, womens_health, ai_insight } = data
   const firstName = profile.user_name.split(' ')[0]
   const hour = new Date().getHours()
   const greeting = hour >= 5 && hour < 12 ? t['dashboard.good_morning'] : hour < 18 ? t['dashboard.good_afternoon'] : t['dashboard.good_evening']
@@ -212,17 +406,29 @@ export function Dashboard() {
     </div>
   )
 
+  const topPriority = priorities[0]
+
   return (
-    <PageWrapper title={`${greeting}, ${firstName}`} subtitle={t['dashboard.personal_intelligence']} action={contextPills}>
+    <PageWrapper title={`${greeting}, ${firstName}`} subtitle={t['dashboard.your_health_journey']} action={contextPills}>
       <div className="dashboard-page space-y-5 pb-4">
+        {/* Summary cards */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <DashboardStat icon={AlertTriangle} label={t['dashboard.health_priorities']} value={String(priorities.length)} detail={t['dashboard.needs_attention']} tone="primary" />
+          <DashboardStat
+            icon={AlertTriangle}
+            label={t['dashboard.health_priorities']}
+            value={String(priorities.length)}
+            detail={t['dashboard.needs_attention']}
+            tone="primary"
+            badge={topPriority ? { label: topPriority.severity === 'high' ? t['insight.urgency_high'] : topPriority.severity === 'medium' ? t['insight.urgency_medium'] : t['insight.urgency_low'], variant: topPriority.severity === 'high' ? 'high' : topPriority.severity === 'medium' ? 'low' : 'normal' } : undefined}
+          />
           <DashboardStat icon={Moon} label={t['dashboard.avg_sleep']} value={`${sleep.avg_hours}h`} detail={`${t['dashboard.target']} ${sleep.target_hours}h`} tone="violet" />
-          <DashboardStat icon={Droplets} label={t['dashboard.hydration_today']} value={formatLiters(hydration.today_ml)} detail={`${t['common.of']} ${formatLiters(hydration.target_ml)}`} tone="cyan" />
-          <DashboardStat icon={Footprints} label={t['dashboard.activity']} value={activitySteps > 0 ? activitySteps.toLocaleString() : '—'} detail={activityDetail} tone="green" />
+          <DashboardStat icon={Droplets} label={t['dashboard.hydration_today']} value={formatLiters(hydration.today_ml)} detail={`${t['common.of']} ${formatLiters(hydration.target_ml)}`} tone="cyan" circularPercent={hydrationPercent} />
+          <DashboardStat icon={Activity} label={t['dashboard.activity']} value={activitySteps > 0 ? activitySteps.toLocaleString() : '—'} detail={activityDetail} tone="green" />
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-[minmax(14rem,0.82fr)_minmax(0,1.55fr)_minmax(15rem,0.9fr)] xl:items-start">
+        {/* Three-column main area */}
+        <div className="grid gap-5 lg:grid-cols-[minmax(16rem,0.9fr)_minmax(0,1.5fr)_minmax(16rem,1fr)] lg:items-start">
+          {/* Health Priorities */}
           <aside className="dashboard-glass space-y-4 rounded-3xl border border-border p-4 sm:p-5">
             <div className="flex items-center justify-between gap-3">
               <div>
@@ -238,9 +444,11 @@ export function Dashboard() {
             )}
           </aside>
 
+          {/* Anatomy hero */}
           <AnatomyExplorer data={data} />
 
-          <aside className="space-y-5 md:col-span-2 xl:col-span-1">
+          {/* Right column */}
+          <aside className="space-y-5">
             <section className="dashboard-glass rounded-3xl border border-border p-4 sm:p-5">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2"><Watch size={15} className="text-primary" /><h2 className="text-sm font-semibold text-text-primary">{t['dashboard.recovery_activity']}</h2></div>
@@ -290,10 +498,10 @@ export function Dashboard() {
             </section>
 
             {isFemaleProfile && womens_health && (
-              <section className="dashboard-glass rounded-3xl border border-[#EC4899]/25 p-4 sm:p-5">
+              <section className="dashboard-glass rounded-3xl border border-cycle/25 p-4 sm:p-5">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2"><Heart size={15} className="text-[#F472B6]" /><h2 className="text-sm font-semibold text-text-primary">{t['womens.dashboard_card']}</h2></div>
-                  <button type="button" onClick={() => navigate('/womens-health')} className="inline-flex items-center gap-1 text-xs text-[#F472B6] hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>
+                  <div className="flex items-center gap-2"><Heart size={15} className="text-cycle-light" /><h2 className="text-sm font-semibold text-text-primary">{t['womens.dashboard_card']}</h2></div>
+                  <button type="button" onClick={() => navigate('/womens-health')} className="inline-flex items-center gap-1 text-xs text-cycle-light hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   <MetricCell icon={CalendarDays} label={t['womens.current_cycle']} value={womens_health.current_cycle_day != null ? t['womens.day_of'].replace('{{day}}', String(womens_health.current_cycle_day)).replace('{{total}}', String(womens_health.average_cycle_length ?? 28)) : '—'} />
@@ -306,69 +514,54 @@ export function Dashboard() {
           </aside>
         </div>
 
-        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-[1.1fr_0.9fr]">
-          <section className="dashboard-glass overflow-hidden rounded-3xl border border-border">
-            <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
-              <div><p className="dashboard-eyebrow">{t['dashboard.deterministic_data']}</p><h2 className="mt-1 text-base font-semibold text-text-primary">{t['dashboard.latest_lab_report']}</h2></div>
-              {lab_summary.report_id && <button type="button" onClick={() => navigate(`/lab-reports/${lab_summary.report_id}`)} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>}
-            </div>
-            {lab_summary.report_id ? (
-              <div className="grid grid-cols-2 gap-px bg-border sm:grid-cols-3">
-                {lab_summary.biomarkers.slice(0, 6).map(biomarker => (
-                  <div key={biomarker.id} className="min-w-0 bg-bg-surface p-4">
-                    <p className="truncate text-[11px] text-text-muted" title={biomarker.name}>{biomarker.name}</p>
-                    <p className="mt-1 text-sm font-semibold text-text-primary">{biomarker.value} <span className="text-[10px] font-normal text-text-muted">{biomarker.unit}</span></p>
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      <Badge label={biomarker.status} variant={biomarker.status} size="sm" />
-                      {(biomarker.reference_low != null || biomarker.reference_high != null) && <span className="text-[10px] text-text-muted">{biomarker.reference_low ?? '—'}–{biomarker.reference_high ?? '—'}</span>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-6 text-center text-xs text-text-secondary">{t['dashboard.no_lab_data']}</div>
-            )}
-          </section>
-
-          <section className="dashboard-glass rounded-3xl border border-border p-5">
-            <div className="flex items-center justify-between gap-3">
-              <div><p className="dashboard-eyebrow">{t['dashboard.recent_events']}</p><h2 className="mt-1 text-base font-semibold text-text-primary">{t['dashboard.health_timeline']}</h2></div>
-              <button type="button" onClick={() => navigate('/timeline')} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>
-            </div>
-            {visibleTimeline.length > 0 ? (
-              <div className="relative mt-5 space-y-3 before:absolute before:inset-y-2 before:start-3 before:w-px before:bg-border">
-                {visibleTimeline.slice(0, 4).map(event => {
-                  const Icon = timelineIcons[event.event_type] ?? Activity
-                  const color = timelineColors[event.event_type] ?? timelineColors.activity
-                  return (
-                    <div key={event.id} className="relative flex gap-3 ps-9">
-                      <span className={`absolute start-0 top-0.5 flex h-6 w-6 items-center justify-center rounded-full border ${color}`}><Icon size={12} /></span>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3"><p className="text-xs font-medium text-text-primary">{event.title}</p><span className="shrink-0 text-[10px] text-text-muted">{event.date}</span></div>
-                        <p className="mt-0.5 text-xs leading-relaxed text-text-secondary">{event.description}</p>
-                        {event.is_ai_generated && <span className="mt-1 inline-flex rounded-full border border-[#A78BFA]/20 bg-[#A78BFA]/10 px-1.5 py-0.5 text-[9px] font-medium text-[#A78BFA]">AI</span>}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="mt-5 rounded-xl bg-bg-base/40 p-4 text-center text-xs text-text-secondary">{t['dashboard.no_timeline_events']}</p>
-            )}
-          </section>
+        {/* Four lower cards */}
+        <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+          <LatestLabsCard labSummary={lab_summary} />
+          <NutritionCard nutrition={nutrition} />
+          <ActivityCard activitySteps={activitySteps} wearable={wearable} />
+          <SleepCard sleep={sleep} />
         </div>
 
+        {/* AI Health Intelligence */}
         <DashboardInsight insightData={insightData} fallbackInsight={ai_insight} onAskAI={() => navigate('/assistant')} userSex={profile.sex as 'male' | 'female'} />
+
+        {/* Recent Activity */}
+        <section className="dashboard-glass rounded-3xl border border-border p-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Clock3 size={15} className="text-primary" />
+              <div>
+                <h2 className="text-sm font-semibold text-text-primary">{t['dashboard.recent_activity_title']}</h2>
+                <p className="text-xs text-text-secondary">{t['dashboard.recent_activity_subtitle']}</p>
+              </div>
+            </div>
+            <button type="button" onClick={() => navigate('/timeline')} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">{t['dashboard.view_all']}<ChevronRight size={13} /></button>
+          </div>
+          {visibleTimeline.length > 0 ? (
+            <div className="mt-4 space-y-2">
+              {visibleTimeline.slice(0, 5).map(event => {
+                const Icon = timelineIcons[event.event_type] ?? Activity
+                const color = timelineColors[event.event_type] ?? timelineColors.activity
+                return (
+                  <div key={event.id} className="flex items-center gap-3 rounded-xl border border-border bg-bg-base/45 px-3 py-2.5">
+                    <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border ${color}`}><Icon size={14} /></span>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <p className="text-xs font-medium text-text-primary">{event.title}</p>
+                        <span className="shrink-0 text-[10px] text-text-muted">{formatEventDate(event.date)}</span>
+                      </div>
+                      <p className="mt-0.5 truncate text-xs text-text-secondary">{event.description}</p>
+                    </div>
+                    <ChevronRight size={14} className="shrink-0 text-text-muted" />
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="mt-4 rounded-xl bg-bg-base/45 p-4 text-center text-xs text-text-secondary">{t['dashboard.no_timeline_events']}</p>
+          )}
+        </section>
       </div>
     </PageWrapper>
-  )
-}
-
-function MetricCell({ icon: Icon, label, value }: { icon: IconType; label: string; value: string }) {
-  return (
-    <div className="rounded-xl bg-bg-base/45 p-2.5">
-      <div className="flex items-center gap-1.5 text-text-muted"><Icon size={12} className="text-primary" /><span className="truncate text-[10px]">{label}</span></div>
-      <p className="mt-1 truncate text-sm font-semibold text-text-primary" title={value}>{value}</p>
-    </div>
   )
 }

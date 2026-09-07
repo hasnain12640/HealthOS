@@ -26,15 +26,15 @@ const iconMap: Record<string, LucideIcon> = {
 }
 
 const colorMap: Record<string, string> = {
-  lab: 'text-[#0EA5E9] bg-[#0EA5E9]/10 border-[#0EA5E9]/20',
-  nutrition: 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/20',
-  hydration: 'text-[#38BDF8] bg-[#38BDF8]/10 border-[#38BDF8]/20',
-  ai_insight: 'text-[#A78BFA] bg-[#A78BFA]/10 border-[#A78BFA]/20',
-  plan: 'text-[#F59E0B] bg-[#F59E0B]/10 border-[#F59E0B]/20',
-  activity: 'text-[#10B981] bg-[#10B981]/10 border-[#10B981]/20',
-  wearable: 'text-[#3B82F6] bg-[#3B82F6]/10 border-[#3B82F6]/20',
-  cycle: 'text-[#F472B6] bg-[#EC4899]/10 border-[#EC4899]/20',
-  cycle_symptom: 'text-[#F9A8D4] bg-[#EC4899]/10 border-[#EC4899]/20',
+  lab: 'text-primary bg-primary/10 border-primary/20',
+  nutrition: 'text-accent bg-accent/10 border-accent/20',
+  hydration: 'text-primary-light bg-primary-light/10 border-primary-light/20',
+  ai_insight: 'text-primary-light bg-primary-light/10 border-primary-light/20',
+  plan: 'text-warning bg-warning/10 border-warning/20',
+  activity: 'text-accent bg-accent/10 border-accent/20',
+  wearable: 'text-primary bg-primary/10 border-primary/20',
+  cycle: 'text-status-high bg-status-high/10 border-status-high/20',
+  cycle_symptom: 'text-status-low bg-status-low/10 border-status-low/20',
 }
 
 export function HealthTimeline() {
@@ -56,31 +56,31 @@ export function HealthTimeline() {
 
   if (error) return (
     <PageWrapper title="Health Timeline" subtitle="Your chronological health journey">
-      <Card><p className="text-[#EF4444] text-sm text-center py-4">{error}</p></Card>
+      <Card><p className="text-danger text-sm text-center py-4">{error}</p></Card>
     </PageWrapper>
   )
 
   return (
     <PageWrapper title="Health Timeline" subtitle="Your chronological health journey">
       <div className="relative">
-        <div className="absolute left-5 top-0 bottom-0 w-px bg-[#1F2937]" />
+        <div className="absolute start-5 top-0 bottom-0 w-px bg-border-subtle" />
         <div className="space-y-4">
           {events.map(event => {
             const Icon = iconMap[event.event_type] ?? Activity
             const colors = colorMap[event.event_type] ?? colorMap.activity
             return (
-              <div key={event.id} className="flex items-start gap-4 pl-10 relative">
-                <div className={`absolute left-2 top-3 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 ${colors}`}>
+              <div key={event.id} className="flex items-start gap-4 ps-10 relative">
+                <div className={`absolute start-2 top-3 w-6 h-6 rounded-full border flex items-center justify-center shrink-0 ${colors}`}>
                   <Icon size={12} />
                 </div>
                 <Card className="flex-1">
                   <div className="flex items-start justify-between">
                     <div>
-                      <p className="text-[#F9FAFB] text-sm font-medium">{event.title}</p>
-                      <p className="text-[#9CA3AF] text-xs mt-0.5">{event.description}</p>
+                      <p className="text-text-primary text-sm font-medium">{event.title}</p>
+                      <p className="text-text-secondary text-xs mt-0.5">{event.description}</p>
                     </div>
-                    <div className="text-right ml-3 shrink-0">
-                      <p className="text-[#6B7280] text-xs">{event.date}</p>
+                    <div className="text-end ms-3 shrink-0">
+                      <p className="text-text-muted text-xs">{event.date}</p>
                       {event.is_ai_generated && <Badge label="AI" variant="info" />}
                     </div>
                   </div>
@@ -90,7 +90,7 @@ export function HealthTimeline() {
           })}
           {events.length === 0 && (
             <Card>
-              <p className="text-[#6B7280] text-sm text-center py-4">No timeline events yet.</p>
+              <p className="text-text-muted text-sm text-center py-4">No timeline events yet.</p>
             </Card>
           )}
         </div>

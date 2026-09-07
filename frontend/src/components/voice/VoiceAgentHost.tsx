@@ -158,7 +158,7 @@ export function VoiceAgentHost() {
               <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
                 <div className="flex items-center justify-between gap-2">
                   <p className="text-primary text-xs font-medium">{intentLabel(command.intent)}</p>
-                  <span className="text-text-muted text-[10px]">{command.provider === 'qwen' ? 'Qwen' : 'Mock'}</span>
+                  <span className="text-text-muted text-[10px]">{command.provider === 'qwen' ? 'Qwen' : 'HealthOS'}</span>
                 </div>
                 <p className="mt-2 text-text-primary text-sm leading-relaxed">{command.response_text}</p>
                 {command.result && (

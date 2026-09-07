@@ -239,9 +239,9 @@ export function WomensHealth() {
   const leadingBlanks = new Date(calMonth.year, calMonth.month - 1, 1).getDay()
 
   const legend = [
-    { color: 'bg-[#EC4899]/70', label: t['womens.legend_period'] },
-    { color: 'bg-transparent border border-dashed border-[#EC4899]/70', label: t['womens.legend_predicted'] },
-    { color: 'bg-[#A78BFA]/50', label: t['womens.legend_fertile'] },
+    { color: 'bg-cycle/70', label: t['womens.legend_period'] },
+    { color: 'bg-transparent border border-dashed border-cycle/70', label: t['womens.legend_predicted'] },
+    { color: 'bg-fertile/50', label: t['womens.legend_fertile'] },
     { color: 'bg-transparent border-2 border-primary/70', label: t['womens.legend_today'] },
     { color: 'bg-accent', label: t['womens.legend_symptom'] },
   ]
@@ -256,14 +256,14 @@ export function WomensHealth() {
     },
     {
       icon: Droplets,
-      color: 'text-[#EC4899]',
+      color: 'text-cycle',
       label: t['womens.avg_period_length'],
       value: p?.average_period_length != null ? String(p.average_period_length) : '—',
       unit: p?.average_period_length != null ? t['womens.days_unit'] : '',
     },
     {
       icon: Heart,
-      color: 'text-[#EC4899]',
+      color: 'text-cycle',
       label: t['womens.cycles_tracked'],
       value: String(p?.cycles_tracked ?? 0),
       unit: '',
@@ -293,8 +293,8 @@ export function WomensHealth() {
             <>
               <div className="flex flex-col lg:flex-row lg:items-center gap-5">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="w-20 h-20 rounded-2xl bg-[#EC4899]/10 border border-[#EC4899]/20 flex flex-col items-center justify-center shrink-0">
-                    <span className="text-[#F472B6] text-2xl font-bold leading-none">{p.current_cycle_day}</span>
+                  <div className="w-20 h-20 rounded-2xl bg-cycle/10 border border-cycle/20 flex flex-col items-center justify-center shrink-0">
+                    <span className="text-cycle-light text-2xl font-bold leading-none">{p.current_cycle_day}</span>
                     <span className="text-text-muted text-[10px] mt-1">{t['womens.days_unit']}</span>
                   </div>
                   <div>
@@ -367,8 +367,8 @@ export function WomensHealth() {
             </>
           ) : (
             <div className="flex flex-col items-center text-center py-8">
-              <div className="w-14 h-14 rounded-full bg-[#EC4899]/10 border border-[#EC4899]/20 flex items-center justify-center mb-3">
-                <Heart size={24} className="text-[#F472B6]" />
+              <div className="w-14 h-14 rounded-full bg-cycle/10 border border-cycle/20 flex items-center justify-center mb-3">
+                <Heart size={24} className="text-cycle-light" />
               </div>
               <h3 className="text-text-primary font-medium text-sm mb-1">{t['womens.no_cycles']}</h3>
               <p className="text-text-secondary text-xs mb-4 max-w-sm">{t['womens.no_cycles_desc']}</p>
@@ -433,7 +433,7 @@ export function WomensHealth() {
                   className={[
                     'px-3 py-1.5 rounded-full text-xs font-medium border transition-colors',
                     selectedSymptom === type
-                      ? 'border-[#EC4899]/50 bg-[#EC4899]/15 text-[#F9A8D4]'
+                      ? 'border-cycle/50 bg-cycle/15 text-cycle-light'
                       : 'border-border bg-bg-elevated text-text-secondary hover:text-text-primary',
                   ].join(' ')}
                 >
@@ -518,11 +518,11 @@ export function WomensHealth() {
             ))}
             {calendar?.days.map(day => {
               const classes = day.in_period
-                ? 'bg-[#EC4899]/20 text-[#F9A8D4] font-semibold'
+                ? 'bg-cycle/20 text-cycle-light font-semibold'
                 : day.is_predicted_period
-                  ? 'border border-dashed border-[#EC4899]/50 text-[#F9A8D4]'
+                  ? 'border border-dashed border-cycle/50 text-cycle-light'
                   : day.is_fertile_window
-                    ? 'bg-[#A78BFA]/15 text-[#C4B5FD]'
+                    ? 'bg-fertile/15 text-fertile-light'
                     : 'text-text-secondary hover:bg-bg-elevated'
               const todayRing = day.is_today ? 'ring-2 ring-primary/60' : ''
               return (
@@ -581,8 +581,8 @@ export function WomensHealth() {
                 {symptoms.slice(0, 8).map(s => (
                   <div key={s.id} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-7 h-7 rounded-lg bg-[#EC4899]/10 border border-[#EC4899]/20 flex items-center justify-center shrink-0">
-                        <Heart size={12} className="text-[#F472B6]" />
+                      <div className="w-7 h-7 rounded-lg bg-cycle/10 border border-cycle/20 flex items-center justify-center shrink-0">
+                        <Heart size={12} className="text-cycle-light" />
                       </div>
                       <div className="min-w-0">
                         <p className="text-text-primary text-xs font-medium truncate">

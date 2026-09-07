@@ -1,21 +1,23 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FlaskConical, Clock, Apple,
-  Droplets, MessageCircle, CalendarDays, User, Settings, Activity, LogOut, Watch, Heart,
+  Droplets, MessageCircle, User, Settings, Activity, LogOut, Heart,
+  Watch, CalendarDays, History,
 } from 'lucide-react'
 import { useAuthStore } from '../../store/authStore'
 import { useT } from '../../i18n/useT'
 
 const navItems = [
-  { to: '/dashboard',  icon: LayoutDashboard, labelKey: 'nav.dashboard' as const },
-  { to: '/lab-reports', icon: FlaskConical,   labelKey: 'nav.lab_reports' as const },
-  { to: '/timeline',   icon: Clock,           labelKey: 'nav.timeline' as const },
-  { to: '/nutrition',  icon: Apple,           labelKey: 'nav.nutrition' as const },
-  { to: '/hydration',  icon: Droplets,        labelKey: 'nav.hydration' as const },
-  { to: '/activity',   icon: Activity,        labelKey: 'nav.activity' as const },
-  { to: '/assistant',  icon: MessageCircle,   labelKey: 'nav.ai_assistant' as const },
-  { to: '/plan',       icon: CalendarDays,    labelKey: 'nav.seven_day_plan' as const },
-  { to: '/wearables',  icon: Watch,           labelKey: 'nav.wearables' as const },
+  { to: '/dashboard',   icon: LayoutDashboard, labelKey: 'nav.dashboard' as const },
+  { to: '/lab-reports', icon: FlaskConical,    labelKey: 'nav.lab_reports' as const },
+  { to: '/history',     icon: History,         labelKey: 'nav.history' as const },
+  { to: '/timeline',    icon: Clock,           labelKey: 'nav.timeline' as const },
+  { to: '/nutrition',   icon: Apple,           labelKey: 'nav.nutrition' as const },
+  { to: '/hydration',   icon: Droplets,        labelKey: 'nav.hydration' as const },
+  { to: '/activity',    icon: Activity,        labelKey: 'nav.activity' as const },
+  { to: '/wearables',   icon: Watch,           labelKey: 'nav.wearables' as const },
+  { to: '/assistant',   icon: MessageCircle,   labelKey: 'nav.ai_assistant' as const },
+  { to: '/plan',        icon: CalendarDays,    labelKey: 'nav.seven_day_plan' as const },
 ]
 
 const bottomItems = [
@@ -69,9 +71,7 @@ export function Sidebar({ onClose }: SidebarProps) {
               [
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? to === '/dashboard'
-                    ? 'border border-primary/25 bg-primary/10 text-primary shadow-[0_0_22px_rgba(14,165,233,0.14)]'
-                    : 'bg-primary/10 text-primary'
+                  ? 'bg-primary text-white shadow-[0_0_20px_rgba(14,165,233,0.25)]'
                   : 'text-text-secondary hover:bg-bg-surface hover:text-text-primary',
               ].join(' ')
             }
@@ -93,9 +93,7 @@ export function Sidebar({ onClose }: SidebarProps) {
               [
                 'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                 isActive
-                  ? to === '/dashboard'
-                    ? 'border border-primary/25 bg-primary/10 text-primary shadow-[0_0_22px_rgba(14,165,233,0.14)]'
-                    : 'bg-primary/10 text-primary'
+                  ? 'bg-primary text-white shadow-[0_0_20px_rgba(14,165,233,0.25)]'
                   : 'text-text-secondary hover:bg-bg-surface hover:text-text-primary',
               ].join(' ')
             }
@@ -108,7 +106,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         {/* User chip + logout */}
         <div className="px-3 py-2.5 mt-1 space-y-2">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
               <span className="text-primary text-xs font-semibold">{initials}</span>
             </div>
             <div className="min-w-0">
