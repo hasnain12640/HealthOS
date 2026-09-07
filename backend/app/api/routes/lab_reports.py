@@ -41,6 +41,7 @@ class ReportOut(BaseModel):
     parsing_method: str
     upload_date: str
     biomarkers: list[BiomarkerOut]
+    warning: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -139,13 +140,14 @@ async def upload_lab_report(
     # Parse biomarkers deterministically
     parsed = parse_biomarkers(raw_text, report_id)
     if not parsed:
-        # Store the report anyway so the user can see it was uploaded,
-        # but return a message that manual entry is needed.
         db.commit()
-        raise HTTPException(
-            status_code=422,
-            detail="Report uploaded but no recognisable biomarkers were extracted. Use manual entry to add results.",
+        db.refresh(report)
+        report.biomarkers = []
+        report.warning = (
+            "Report uploaded, but no recognisable biomarkers were extracted. "
+            "Use manual entry to add results."
         )
+        return report
 
     for b_data in parsed:
         db.add(Biomarker(**b_data))

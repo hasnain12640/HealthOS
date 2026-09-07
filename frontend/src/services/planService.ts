@@ -7,6 +7,7 @@ export interface GeneratedPlan {
     days: DayPlan[]
   }
   provider: string
+  model: string | null
   generated_at: string
 }
 

@@ -8,6 +8,7 @@ export interface ChatHistoryItem {
 export interface ChatResponse {
   reply: string
   provider: string
+  model: string | null
 }
 
 export async function sendChatMessage(

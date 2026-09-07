@@ -225,8 +225,8 @@ def _cycle_for_date(
 
 def _wearable_metrics_by_date(
     connection_id: str, start_iso: str, end_iso: str, db: Session
-) -> dict[str, dict[str, float]]:
-    """Return {date_iso: {metric_type: value}} for the active wearable."""
+) -> dict[str, dict[str, tuple[float, str]]]:
+    """Return {date_iso: {metric_type: (value, unit)}} for the active wearable."""
     metrics = (
         db.query(WearableMetric)
         .filter(
@@ -239,19 +239,19 @@ def _wearable_metrics_by_date(
     )
 
     # Keep the latest value per metric_type per date.
-    best: dict[str, dict[str, tuple[datetime, float]]] = defaultdict(dict)
+    best: dict[str, dict[str, tuple[datetime, float, str]]] = defaultdict(dict)
     for m in metrics:
         d = m.recorded_at.date().isoformat()
         current = best[d].get(m.metric_type)
         if current is None or m.recorded_at > current[0]:
-            best[d][m.metric_type] = (m.recorded_at, m.value)
+            best[d][m.metric_type] = (m.recorded_at, m.value, m.unit)
 
-    return {d: {k: v[1] for k, v in per_type.items()} for d, per_type in best.items()}
+    return {d: {k: (v[1], v[2]) for k, v in per_type.items()} for d, per_type in best.items()}
 
 
-def _metric(day: dict[str, float], key: str) -> Optional[float | int]:
+def _metric(day: dict[str, tuple[float, str]], key: str) -> Optional[float | int]:
     val = day.get(key)
-    return None if val is None else val
+    return None if val is None else val[0]
 
 
 def build_history(profile: HealthProfile, db: Session, days: int = 30) -> dict:
@@ -322,7 +322,7 @@ def build_history(profile: HealthProfile, db: Session, days: int = 30) -> dict:
         )
         .first()
     )
-    wearable_by_date: dict[str, dict[str, float]] = {}
+    wearable_by_date: dict[str, dict[str, tuple[float, str]]] = {}
     wearable_summary = None
     if wearable_conn:
         wearable_by_date = _wearable_metrics_by_date(
@@ -358,6 +358,11 @@ def build_history(profile: HealthProfile, db: Session, days: int = 30) -> dict:
         iso = d.isoformat()
 
         w_day = wearable_by_date.get(iso, {})
+        water = w_day.get("water")
+        water_ml = (
+            int(water[0] * 1000) if water and water[1].lower() == "l"
+            else int(water[0]) if water else None
+        )
         wearable_day = {
             "steps": int(_metric(w_day, "steps")) if _metric(w_day, "steps") is not None else None,
             "active_calories": int(_metric(w_day, "active_calories"))
@@ -371,7 +376,7 @@ def build_history(profile: HealthProfile, db: Session, days: int = 30) -> dict:
             else None,
             "sleep_hours": _metric(w_day, "sleep"),
             "distance_km": _metric(w_day, "distance"),
-            "water_ml": int(_metric(w_day, "water")) if _metric(w_day, "water") is not None else None,
+            "water_ml": water_ml,
             "weight_kg": _metric(w_day, "weight"),
         }
 

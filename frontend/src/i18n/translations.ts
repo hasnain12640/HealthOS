@@ -234,7 +234,7 @@ export const en = {
   'settings.light_mode_desc': 'HealthOS uses light mode',
   'settings.ai_provider': 'AI Provider',
   'settings.current_provider': 'Current Provider',
-  'settings.provider_config': 'Configured via environment variable. Demo mode active.',
+  'settings.provider_config': 'Configured via environment variables.',
   'settings.version': 'HealthOS',
 
   // Wearables
@@ -613,7 +613,7 @@ export const ur: TranslationDict = {
   'settings.light_mode_desc': 'HealthOS لائٹ موڈ استعمال کر رہا ہے',
   'settings.ai_provider': 'اے آئی فراہم کنندہ',
   'settings.current_provider': 'موجودہ فراہم کنندہ',
-  'settings.provider_config': 'ماحولیاتی متغیر کے ذریعے ترتیب دیا گیا۔ ڈیمو موڈ فعال ہے۔',
+  'settings.provider_config': 'ماحولیاتی متغیرات کے ذریعے ترتیب دیا گیا۔',
   'settings.version': 'HealthOS',
 
   // Wearables

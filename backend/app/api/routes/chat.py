@@ -30,6 +30,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     reply: str
     provider: str
+    model: str | None = None
 
 
 @router.post("", response_model=ChatResponse)
@@ -62,4 +63,8 @@ async def chat(
                 detail="AI service temporarily unavailable. Please try again.",
             )
 
-    return ChatResponse(reply=reply, provider=provider_name)
+    return ChatResponse(
+        reply=reply,
+        provider=provider_name,
+        model=settings.QWEN_MODEL if provider_name == "qwen" else None,
+    )

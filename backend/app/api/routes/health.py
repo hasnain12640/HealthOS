@@ -11,5 +11,6 @@ def health_check(request: Request):
         "service": "HealthOS API",
         "version": request.app.version,
         "ai_provider": settings.AI_PROVIDER,
+        "ai_model": settings.QWEN_MODEL if settings.AI_PROVIDER == "qwen" else None,
         "database": "sqlite" if "sqlite" in settings.DATABASE_URL else "postgresql",
     }

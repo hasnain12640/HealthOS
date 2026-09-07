@@ -156,9 +156,16 @@ def disconnect_device(connection_id: str, profile_id: str, db: Session) -> Weara
 
 def get_today_metrics(connection_id: str, profile_id: str, db: Session) -> list[dict]:
     conn = _get_connection(connection_id, profile_id, db)
+    today = datetime.date.today()
+    day_start = datetime.datetime.combine(today, datetime.time.min)
+    day_end = datetime.datetime.combine(today, datetime.time.max)
     metrics = (
         db.query(WearableMetric)
-        .filter(WearableMetric.connection_id == conn.id)
+        .filter(
+            WearableMetric.connection_id == conn.id,
+            WearableMetric.recorded_at >= day_start,
+            WearableMetric.recorded_at <= day_end,
+        )
         .order_by(desc(WearableMetric.recorded_at))
         .all()
     )
@@ -220,9 +227,16 @@ def get_connected_summary(profile_id: str, db: Session) -> dict | None:
     if conn is None:
         return None
 
+    today = datetime.date.today()
+    day_start = datetime.datetime.combine(today, datetime.time.min)
+    day_end = datetime.datetime.combine(today, datetime.time.max)
     metrics = (
         db.query(WearableMetric)
-        .filter(WearableMetric.connection_id == conn.id)
+        .filter(
+            WearableMetric.connection_id == conn.id,
+            WearableMetric.recorded_at >= day_start,
+            WearableMetric.recorded_at <= day_end,
+        )
         .order_by(desc(WearableMetric.recorded_at))
         .all()
     )
@@ -271,6 +285,14 @@ def generate_wearable_insight(profile_id: str, db: Session) -> WearableInsight |
 
     sleep_h = summary.get("sleep_hours")
     steps = summary.get("steps")
+    if all(
+        summary.get(key) is None
+        for key in (
+            "steps", "resting_heart_rate", "sleep_hours", "active_calories",
+            "hydration_liters", "distance_km",
+        )
+    ):
+        return None
 
     if sleep_h is not None and sleep_h < 7:
         return WearableInsight(

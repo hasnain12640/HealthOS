@@ -7,7 +7,7 @@ import { sendChatMessage } from '../services/chatService'
 const welcomeMessage: ChatMessage = {
   id: 'msg-0',
   role: 'assistant',
-  content: `Hello, I'm your HealthOS AI Assistant, powered by Qwen. I have access to your health profile, lab results, nutrition, hydration, and sleep data.\n\nYou can ask me questions like:\n• "Why am I feeling tired?"\n• "What does my hemoglobin result mean?"\n• "How can I improve my Vitamin D levels?"\n\nI provide health education and information — not medical diagnoses. Always consult a qualified healthcare professional for medical advice.`,
+  content: `Hello, I'm your HealthOS AI Assistant. I can use your health profile, lab results, nutrition, hydration, and sleep data to provide educational guidance.\n\nYou can ask me questions like:\n• "Why am I feeling tired?"\n• "What does my hemoglobin result mean?"\n• "How can I improve my Vitamin D levels?"\n\nI provide health education and information — not medical diagnoses. Always consult a qualified healthcare professional for medical advice.`,
   timestamp: new Date().toISOString(),
 }
 
@@ -43,7 +43,7 @@ function renderContent(text: string) {
   })
 }
 
-function ProviderBadge({ provider }: { provider?: string }) {
+function ProviderBadge({ provider, model }: { provider?: string; model?: string | null }) {
   if (!provider) return null
   const isQwen = provider === 'qwen'
   return (
@@ -53,13 +53,14 @@ function ProviderBadge({ provider }: { provider?: string }) {
         ? 'text-accent bg-accent/10 border-accent/20'
         : 'text-text-muted bg-bg-elevated border-border-subtle',
     ].join(' ')}>
-      {isQwen ? 'Qwen' : 'HealthOS'}
+      {isQwen ? `Qwen${model ? ` · ${model}` : ''}` : 'HealthOS demo'}
     </span>
   )
 }
 
 interface ExtendedMessage extends ChatMessage {
   provider?: string
+  model?: string | null
 }
 
 export function AIAssistant() {
@@ -101,6 +102,7 @@ export function AIAssistant() {
         content: result.reply,
         timestamp: new Date().toISOString(),
         provider: result.provider,
+        model: result.model,
       }
       setMessages(prev => [...prev, assistantMsg])
     } catch {
@@ -125,7 +127,7 @@ export function AIAssistant() {
                   <div className="w-7 h-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center mt-1">
                     <span className="text-primary text-[10px] font-bold">AI</span>
                   </div>
-                  {msg.provider && <ProviderBadge provider={msg.provider} />}
+                  {msg.provider && <ProviderBadge provider={msg.provider} model={msg.model} />}
                 </div>
               )}
               <div className={[

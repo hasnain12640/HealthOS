@@ -114,5 +114,6 @@ async def generate_plan(
     return {
         "plan": plan_data,
         "provider": used_provider,
+        "model": settings.QWEN_MODEL if used_provider == "qwen" else None,
         "generated_at": date.today().isoformat(),
     }

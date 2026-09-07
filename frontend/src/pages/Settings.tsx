@@ -1,13 +1,36 @@
+import { useEffect, useState } from 'react'
 import { PageWrapper, Card } from '../components/ui'
 import { Globe, Moon, Sun, Watch, ChevronRight } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { useSettingsStore } from '../store/settingsStore'
 import { useT } from '../i18n/useT'
+import { getHealthStatus, type HealthStatus } from '../services/healthService'
 
 export function Settings() {
   const { language, theme, setLanguage, toggleTheme } = useSettingsStore()
   const t = useT()
   const navigate = useNavigate()
+  const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null)
+  const [healthStatusLoaded, setHealthStatusLoaded] = useState(false)
+
+  useEffect(() => {
+    getHealthStatus()
+      .then(setHealthStatus)
+      .catch(() => setHealthStatus(null))
+      .finally(() => setHealthStatusLoaded(true))
+  }, [])
+
+  const isQwenConfigured = healthStatus?.ai_provider === 'qwen'
+  const providerName = !healthStatusLoaded
+    ? 'Loading provider…'
+    : isQwenConfigured
+      ? 'Qwen (Alibaba Cloud)'
+      : healthStatus
+        ? 'HealthOS demo'
+        : 'Provider status unavailable'
+  const providerDetail = isQwenConfigured && healthStatus?.ai_model
+    ? `Configured model: ${healthStatus.ai_model}`
+    : t['settings.provider_config']
 
   return (
     <PageWrapper title={t['settings.title']} subtitle={t['settings.subtitle']}>
@@ -90,8 +113,8 @@ export function Settings() {
           <h3 className="text-text-primary font-semibold text-sm mb-3">{t['settings.ai_provider']}</h3>
           <div className="bg-bg-elevated rounded-lg p-3">
             <p className="text-text-secondary text-xs mb-1">{t['settings.current_provider']}</p>
-            <p className="text-text-primary text-sm font-medium">Qwen (Alibaba Cloud)</p>
-            <p className="text-text-muted text-xs mt-1">{t['settings.provider_config']}</p>
+            <p className="text-text-primary text-sm font-medium">{providerName}</p>
+            <p className="text-text-muted text-xs mt-1">{providerDetail}</p>
           </div>
         </Card>
 
