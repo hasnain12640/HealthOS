@@ -2,14 +2,14 @@ import uuid
 from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 from app.core.database import get_db
 from app.core.dates import today_iso
 from app.api.deps import get_current_profile
-from app.models.models import LabReport, Biomarker, HealthProfile
+from app.models.models import LabReport, Biomarker, HealthProfile, TimelineEvent
 from app.services.deterministic.pdf_extractor import extract_text_from_pdf
-from app.services.deterministic.biomarker_parser import parse_biomarkers
+from app.services.deterministic.biomarker_parser import parse_biomarkers, BIOMARKER_DEFAULTS
 
 router = APIRouter()
 
@@ -73,7 +73,19 @@ class ManualBiomarker(BaseModel):
 class ManualReportCreate(BaseModel):
     lab_name: str = "Manual Entry"
     report_date: str
-    biomarkers: list[ManualBiomarker]
+    biomarkers: list[ManualBiomarker] = Field(..., min_length=1)
+
+
+class CatalogItem(BaseModel):
+    name: str
+    category: str
+    unit: str
+    reference_low: Optional[float]
+    reference_high: Optional[float]
+
+
+class CatalogOut(BaseModel):
+    biomarkers: list[CatalogItem]
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
@@ -186,7 +198,38 @@ def create_manual_report(
     db.commit()
     db.refresh(report)
     report.biomarkers = db.query(Biomarker).filter(Biomarker.report_id == report_id).all()
+
+    abnormal_count = sum(1 for b in report.biomarkers if b.status != "normal")
+    db.add(TimelineEvent(
+        id=str(uuid.uuid4()),
+        profile_id=profile_id,
+        date=data.report_date,
+        event_type="lab",
+        title=f"Manual lab report — {data.lab_name}",
+        description=(
+            f"{len(report.biomarkers)} biomarker(s) added manually. "
+            f"{abnormal_count} outside reference range."
+        ),
+        is_ai_generated=False,
+    ))
+    db.commit()
+
     return report
+
+
+@router.get("/catalog", response_model=CatalogOut)
+def get_biomarker_catalog():
+    items = [
+        CatalogItem(
+            name=name,
+            category=data["category"],
+            unit=data["unit"],
+            reference_low=data.get("reference_low"),
+            reference_high=data.get("reference_high"),
+        )
+        for name, data in BIOMARKER_DEFAULTS.items()
+    ]
+    return CatalogOut(biomarkers=items)
 
 
 @router.get("", response_model=list[ReportSummary])

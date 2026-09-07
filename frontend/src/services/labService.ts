@@ -32,6 +32,29 @@ export interface ReportSummary {
   abnormal_count: number
 }
 
+export interface CatalogItem {
+  name: string
+  category: string
+  unit: string
+  reference_low: number | null
+  reference_high: number | null
+}
+
+export interface ManualBiomarkerInput {
+  name: string
+  value: number
+  unit: string
+  reference_low: number | null
+  reference_high: number | null
+  category: string
+}
+
+export interface ManualReportInput {
+  lab_name: string
+  report_date: string
+  biomarkers: ManualBiomarkerInput[]
+}
+
 export async function listReports(): Promise<ReportSummary[]> {
   const res = await api.get<ReportSummary[]>('/lab')
   return res.data
@@ -54,5 +77,15 @@ export async function uploadReport(
   const res = await api.post<ReportDetail>('/lab/upload', form, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
+  return res.data
+}
+
+export async function getBiomarkerCatalog(): Promise<CatalogItem[]> {
+  const res = await api.get<{ biomarkers: CatalogItem[] }>('/lab/catalog')
+  return res.data.biomarkers
+}
+
+export async function createManualReport(payload: ManualReportInput): Promise<ReportDetail> {
+  const res = await api.post<ReportDetail>('/lab/manual', payload)
   return res.data
 }

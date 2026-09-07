@@ -57,6 +57,31 @@ BIOMARKER_CATALOG: dict[str, dict] = {
     "ferritin":              {"canonical": "Ferritin",              "category": "vitamin"},
 }
 
+# Canonical defaults exposed for manual entry auto-fill.
+# Values are general adult reference ranges; labs may use their own.
+BIOMARKER_DEFAULTS: dict[str, dict] = {
+    "Hemoglobin":            {"category": "CBC",        "unit": "g/dL",   "reference_low": 13.0,  "reference_high": 17.0},
+    "WBC Count":             {"category": "CBC",        "unit": "/µL",    "reference_low": 4000.0,"reference_high": 11000.0},
+    "Platelets":             {"category": "CBC",        "unit": "/µL",    "reference_low": 150000.0,"reference_high": 400000.0},
+    "Hematocrit (PCV)":      {"category": "CBC",        "unit": "%",      "reference_low": 38.0,  "reference_high": 50.0},
+    "MCV":                   {"category": "CBC",        "unit": "fL",     "reference_low": 80.0,  "reference_high": 100.0},
+    "MCH":                   {"category": "CBC",        "unit": "pg",     "reference_low": 27.0,  "reference_high": 33.0},
+    "Fasting Blood Glucose": {"category": "metabolic",  "unit": "mg/dL",  "reference_low": 70.0,  "reference_high": 100.0},
+    "Creatinine":            {"category": "metabolic",  "unit": "mg/dL",  "reference_low": 0.7,   "reference_high": 1.2},
+    "Urea (BUN)":            {"category": "metabolic",  "unit": "mg/dL",  "reference_low": 7.0,   "reference_high": 20.0},
+    "Uric Acid":             {"category": "metabolic",  "unit": "mg/dL",  "reference_low": 3.5,   "reference_high": 7.2},
+    "SGPT (ALT)":            {"category": "metabolic",  "unit": "U/L",    "reference_low": 7.0,   "reference_high": 56.0},
+    "SGOT (AST)":            {"category": "metabolic",  "unit": "U/L",    "reference_low": 10.0,  "reference_high": 40.0},
+    "Total Cholesterol":     {"category": "lipid",      "unit": "mg/dL",  "reference_low": None,  "reference_high": 200.0},
+    "HDL Cholesterol":       {"category": "lipid",      "unit": "mg/dL",  "reference_low": 40.0,  "reference_high": None},
+    "LDL Cholesterol":       {"category": "lipid",      "unit": "mg/dL",  "reference_low": None,  "reference_high": 100.0},
+    "Triglycerides":         {"category": "lipid",      "unit": "mg/dL",  "reference_low": None,  "reference_high": 150.0},
+    "TSH":                   {"category": "thyroid",    "unit": "mIU/L",  "reference_low": 0.4,   "reference_high": 4.0},
+    "Vitamin D (25-OH)":     {"category": "vitamin",    "unit": "ng/mL",  "reference_low": 30.0,  "reference_high": 100.0},
+    "Vitamin B12":           {"category": "vitamin",    "unit": "pg/mL",  "reference_low": 200.0, "reference_high": 900.0},
+    "Ferritin":              {"category": "vitamin",    "unit": "ng/mL",  "reference_low": 12.0,  "reference_high": 300.0},
+}
+
 # Pattern parsed right-to-left from end of line:
 # Captures: [everything before result]  result  unit  ref_range  [flag]
 # ref_range forms: "13.0 - 17.0"  |  "< 200"  |  "> 40"  |  "0 - 40"
