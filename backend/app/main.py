@@ -19,6 +19,7 @@ from app.api.routes.insights import router as insights_router
 from app.api.routes.wearables import router as wearables_router
 from app.api.routes.cycles import router as cycles_router
 from app.api.routes.voice import router as voice_router
+from app.api.routes.history import router as history_router
 from app.services.seed import seed_demo_data
 
 logging.basicConfig(level=logging.INFO)
@@ -93,6 +94,7 @@ app.include_router(insights_router,  prefix="/api/v1/insights",  tags=["AI Insig
 app.include_router(wearables_router, prefix="/api/v1/wearables", tags=["Wearables"],        dependencies=protected_dependencies)
 app.include_router(cycles_router,   prefix="/api/v1",         tags=["Women's Health"],    dependencies=protected_dependencies)
 app.include_router(voice_router,    prefix="/api/v1/voice",   tags=["Voice Agent"],       dependencies=protected_dependencies)
+app.include_router(history_router,  prefix="/api/v1/history", tags=["History"],            dependencies=protected_dependencies)
 
 
 @app.get("/")

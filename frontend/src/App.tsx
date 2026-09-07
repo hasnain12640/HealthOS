@@ -19,6 +19,7 @@ import { SevenDayPlan } from './pages/SevenDayPlan'
 import { Settings } from './pages/Settings'
 import { Wearables } from './pages/Wearables'
 import { WomensHealth } from './pages/WomensHealth'
+import { HealthHistory } from './pages/HealthHistory'
 import { useAuthStore } from './store/authStore'
 import { useSettingsStore } from './store/settingsStore'
 
@@ -77,6 +78,7 @@ export default function App() {
               <Route path="/plan" element={<SevenDayPlan />} />
               <Route path="/wearables" element={<Wearables />} />
               <Route path="/womens-health" element={<WomensHealth />} />
+              <Route path="/history" element={<HealthHistory />} />
               <Route path="/settings" element={<Settings />} />
             </Route>
           </Route>
