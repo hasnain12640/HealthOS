@@ -11,6 +11,7 @@ interface UploadState {
   reportDate: string
   uploading: boolean
   error: string | null
+  warning: string | null
   success: string | null
 }
 
@@ -24,7 +25,7 @@ export function LabReports() {
   const [showManual, setShowManual] = useState(false)
   const [upload, setUpload] = useState<UploadState>({
     file: null, labName: '', reportDate: '',
-    uploading: false, error: null, success: null,
+    uploading: false, error: null, warning: null, success: null,
   })
 
   const fetchReports = () => {
@@ -38,12 +39,12 @@ export function LabReports() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0] ?? null
-    setUpload(u => ({ ...u, file: f, error: null, success: null }))
+    setUpload(u => ({ ...u, file: f, error: null, warning: null, success: null }))
   }
 
   const handleUpload = async () => {
     if (!upload.file) return
-    setUpload(u => ({ ...u, uploading: true, error: null, success: null }))
+    setUpload(u => ({ ...u, uploading: true, error: null, warning: null, success: null }))
     try {
       const result = await uploadReport(
         upload.file,
@@ -51,16 +52,20 @@ export function LabReports() {
         upload.reportDate || new Date().toISOString().slice(0, 10),
       )
       setUpload(u => ({
-        ...u, uploading: false,
-        success: `${result.biomarkers.length} biomarkers extracted successfully.`,
-        file: null, labName: '', reportDate: '',
+        ...u,
+        uploading: false,
+        warning: result.warning,
+        success: result.warning ? null : `${result.biomarkers.length} biomarkers extracted successfully.`,
+        file: null,
+        labName: '',
+        reportDate: '',
       }))
       fetchReports()
-      setTimeout(() => setShowUpload(false), 2000)
+      if (!result.warning) setTimeout(() => setShowUpload(false), 2000)
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
         ?? 'Upload failed. Please try again.'
-      setUpload(u => ({ ...u, uploading: false, error: msg }))
+      setUpload(u => ({ ...u, uploading: false, error: msg, warning: null }))
     }
   }
 
@@ -149,6 +154,13 @@ export function LabReports() {
                 </div>
               )}
 
+              {upload.warning && (
+                <div className="flex items-start gap-2 bg-primary/10 border border-primary/20 rounded-lg p-3">
+                  <AlertTriangle size={14} className="text-primary shrink-0 mt-0.5" />
+                  <p className="text-primary text-xs">{upload.warning}</p>
+                </div>
+              )}
+
               {upload.success && (
                 <div className="flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg p-3">
                   <CheckCircle2 size={14} className="text-accent" />
@@ -201,9 +213,11 @@ export function LabReports() {
                 </div>
                 <div className="text-right shrink-0 ml-3">
                   <p className="text-text-primary text-sm font-semibold">{r.total_biomarkers} biomarkers</p>
-                  {r.abnormal_count > 0
-                    ? <Badge label={`${r.abnormal_count} outside range`} variant="high" />
-                    : <Badge label="All normal" variant="normal" />
+                  {r.total_biomarkers === 0
+                    ? <Badge label="No biomarkers extracted" variant="default" />
+                    : r.abnormal_count > 0
+                      ? <Badge label={`${r.abnormal_count} outside range`} variant="high" />
+                      : <Badge label="All normal" variant="normal" />
                   }
                 </div>
               </div>

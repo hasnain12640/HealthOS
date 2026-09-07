@@ -114,43 +114,57 @@ export function LabReportDetail() {
     >
       <div className="space-y-5">
 
-        {/* Summary strip */}
-        <div className="grid grid-cols-3 gap-3">
-          {[
-            { label: 'Total Biomarkers', value: String(report.biomarkers.length) },
-            { label: 'Outside Range', value: String(abnormal.length), alert: abnormal.length > 0 },
-            { label: 'Within Normal', value: String(normal.length) },
-          ].map(({ label, value, alert }) => (
-            <Card key={label} padding="md">
-              <p className="text-text-muted text-xs mb-1">{label}</p>
-              <p className={`font-bold text-xl ${alert ? 'text-danger' : 'text-text-primary'}`}>{value}</p>
-            </Card>
-          ))}
-        </div>
+        {report.biomarkers.length === 0 ? (
+          <Card>
+            <div className="flex items-start gap-3">
+              <AlertTriangle size={18} className="text-primary shrink-0 mt-0.5" />
+              <div>
+                <p className="text-text-primary text-sm font-medium">No biomarkers extracted</p>
+                <p className="text-text-secondary text-sm mt-1">
+                  This report was stored successfully, but no recognisable biomarkers were found. Use manual entry to add results from the report.
+                </p>
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <>
+            {/* Summary strip */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Total Biomarkers', value: String(report.biomarkers.length) },
+                { label: 'Outside Range', value: String(abnormal.length), alert: abnormal.length > 0 },
+                { label: 'Within Normal', value: String(normal.length) },
+              ].map(({ label, value, alert }) => (
+                <Card key={label} padding="md">
+                  <p className="text-text-muted text-xs mb-1">{label}</p>
+                  <p className={`font-bold text-xl ${alert ? 'text-danger' : 'text-text-primary'}`}>{value}</p>
+                </Card>
+              ))}
+            </div>
 
-        {/* AI explanation */}
-        <Card>
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
-              <span className="text-primary text-xs font-bold">AI</span>
-            </div>
-            <div>
-              <p className="text-text-muted text-xs mb-1.5">
-                Report Summary · Powered by Qwen
-              </p>
-              <p className="text-text-primary text-sm leading-relaxed">
-                Your blood report shows <strong className="text-danger">{abnormal.length} result{abnormal.length !== 1 ? 's' : ''} outside the reference ranges</strong> provided on the report.
-                {abnormal.length > 0 && (
-                  <> Specifically: {abnormal.map(b => b.name).join(', ')}. These findings can have multiple explanations.</>
-                )}
-                {' '}Your {normal.length} other results are within the reference ranges shown on this report.
-              </p>
-              <p className="mt-2 text-text-muted text-xs italic">
-                This is a rule-based summary for educational purposes only. It does not constitute a medical diagnosis. Consider discussing these results with a qualified healthcare professional.
-              </p>
-            </div>
-          </div>
-        </Card>
+            {/* Report explanation */}
+            <Card>
+              <div className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 mt-0.5">
+                  <span className="text-primary text-xs font-bold">AI</span>
+                </div>
+                <div>
+                  <p className="text-text-muted text-xs mb-1.5">Report Summary</p>
+                  <p className="text-text-primary text-sm leading-relaxed">
+                    Your blood report shows <strong className="text-danger">{abnormal.length} result{abnormal.length !== 1 ? 's' : ''} outside the reference ranges</strong> provided on the report.
+                    {abnormal.length > 0 && (
+                      <> Specifically: {abnormal.map(b => b.name).join(', ')}. These findings can have multiple explanations.</>
+                    )}
+                    {' '}Your {normal.length} other results are within the reference ranges shown on this report.
+                  </p>
+                  <p className="mt-2 text-text-muted text-xs italic">
+                    This is a rule-based summary for educational purposes only. It does not constitute a medical diagnosis. Consider discussing these results with a qualified healthcare professional.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </>
+        )}
 
         {/* Biomarkers by category */}
         {categories.map(cat => (

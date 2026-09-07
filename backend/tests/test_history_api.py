@@ -1,7 +1,9 @@
 """Tests for the 30-day Health History aggregation API."""
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
+from uuid import uuid4
 
-from tests.conftest import days_ago, female_headers, male_headers
+from app.models.models import WearableMetric
+from tests.conftest import TestingSessionLocal, days_ago, female_headers, male_headers
 
 
 def _create_logs(client, headers, profile_id: str):
@@ -132,3 +134,54 @@ def test_history_days_clamped_to_valid_range(client, male_headers):
 
 def test_history_requires_auth(client):
     assert client.get("/api/v1/history?days=7").status_code == 401
+
+
+def test_history_normalizes_wearable_water_units(client, male_headers):
+    connection_response = client.post(
+        "/api/v1/wearables/demo/connect", headers=male_headers
+    )
+    assert connection_response.status_code == 200
+    connection_id = connection_response.json()["id"]
+
+    db = TestingSessionLocal()
+    try:
+        db.query(WearableMetric).filter(
+            WearableMetric.connection_id == connection_id
+        ).delete(synchronize_session=False)
+        db.add_all([
+            WearableMetric(
+                id=str(uuid4()),
+                connection_id=connection_id,
+                metric_type="water",
+                value=1.8,
+                unit="L",
+                recorded_at=datetime.combine(date.today(), time(hour=14)),
+            ),
+            WearableMetric(
+                id=str(uuid4()),
+                connection_id=connection_id,
+                metric_type="steps",
+                value=4321,
+                unit="steps",
+                recorded_at=datetime.combine(date.today(), time(hour=14)),
+            ),
+            WearableMetric(
+                id=str(uuid4()),
+                connection_id=connection_id,
+                metric_type="water",
+                value=1500,
+                unit="ml",
+                recorded_at=datetime.combine(date.today() - timedelta(days=1), time(hour=14)),
+            ),
+        ])
+        db.commit()
+    finally:
+        db.close()
+
+    response = client.get("/api/v1/history?days=2", headers=male_headers)
+    assert response.status_code == 200
+    daily = {entry["date"]: entry for entry in response.json()["daily"]}
+
+    assert daily[date.today().isoformat()]["wearable"]["water_ml"] == 1800
+    assert daily[date.today().isoformat()]["wearable"]["steps"] == 4321
+    assert daily[(date.today() - timedelta(days=1)).isoformat()]["wearable"]["water_ml"] == 1500

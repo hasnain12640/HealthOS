@@ -56,3 +56,49 @@ def test_manual_report_rejects_missing_biomarkers(client, male_headers):
     payload = {"lab_name": "Empty", "report_date": _today(), "biomarkers": []}
     response = client.post("/api/v1/lab/manual", json=payload, headers=male_headers)
     assert response.status_code == 422
+
+
+def test_pdf_upload_without_biomarkers_persists_with_warning(client, male_headers, monkeypatch):
+    monkeypatch.setattr(
+        "app.api.routes.lab_reports.extract_text_from_pdf",
+        lambda _: "Narrative notes with no recognised test results.",
+    )
+    monkeypatch.setattr(
+        "app.api.routes.lab_reports.parse_biomarkers", lambda *_: []
+    )
+
+    response = client.post(
+        "/api/v1/lab/upload",
+        data={"lab_name": "Unrecognised Lab", "report_date": _today()},
+        files={"file": ("unrecognised.pdf", b"%PDF-placeholder", "application/pdf")},
+        headers=male_headers,
+    )
+
+    assert response.status_code == 201
+    report = response.json()
+    assert report["biomarkers"] == []
+    assert "no recognisable biomarkers were extracted" in report["warning"].lower()
+
+    listed = client.get("/api/v1/lab", headers=male_headers).json()
+    assert any(item["id"] == report["id"] for item in listed)
+
+
+def test_pdf_upload_rejects_blank_or_unextractable_text(client, male_headers, monkeypatch):
+    monkeypatch.setattr("app.api.routes.lab_reports.extract_text_from_pdf", lambda _: "  ")
+    blank_response = client.post(
+        "/api/v1/lab/upload",
+        files={"file": ("blank.pdf", b"%PDF-placeholder", "application/pdf")},
+        headers=male_headers,
+    )
+    assert blank_response.status_code == 422
+
+    def fail_extraction(_: bytes) -> str:
+        raise ValueError("corrupt PDF")
+
+    monkeypatch.setattr("app.api.routes.lab_reports.extract_text_from_pdf", fail_extraction)
+    failed_response = client.post(
+        "/api/v1/lab/upload",
+        files={"file": ("corrupt.pdf", b"%PDF-placeholder", "application/pdf")},
+        headers=male_headers,
+    )
+    assert failed_response.status_code == 422

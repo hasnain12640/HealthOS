@@ -209,3 +209,24 @@ def test_chat_endpoint_female_and_male_work(client, female_headers, male_headers
     male_reply = client.post("/api/v1/chat", json=payload, headers=male_headers)
     assert male_reply.status_code == 200
     assert male_reply.json()["provider"] == "mock"
+
+
+def test_mock_provider_metadata_is_truthful(client, male_headers):
+    health = client.get("/api/v1/health")
+    assert health.status_code == 200
+    assert health.json()["ai_provider"] == "mock"
+    assert health.json()["ai_model"] is None
+
+    chat = client.post(
+        "/api/v1/chat",
+        json={"message": "How is my health today?", "history": []},
+        headers=male_headers,
+    )
+    assert chat.status_code == 200
+    assert chat.json()["provider"] == "mock"
+    assert chat.json()["model"] is None
+
+    plan = client.post("/api/v1/plan", headers=male_headers)
+    assert plan.status_code == 200
+    assert plan.json()["provider"] == "mock"
+    assert plan.json()["model"] is None

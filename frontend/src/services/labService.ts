@@ -20,6 +20,7 @@ export interface ReportDetail {
   parsing_method: string
   upload_date: string
   biomarkers: BiomarkerData[]
+  warning: string | null
 }
 
 export interface ReportSummary {
