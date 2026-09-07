@@ -121,6 +121,7 @@ def get_analysis(
                     "activity_type": a.activity_type,
                     "duration_min": a.duration_min,
                     "steps": a.steps,
+                    "notes": a.notes,
                 }
                 for a in activity_logs
             ],

@@ -1,8 +1,64 @@
 import uuid
+from dataclasses import dataclass
 
 from sqlalchemy.orm import Session
 
-from app.models.models import ActivityLog, HydrationLog, NutritionLog, SleepLog
+from app.models.models import ActivityLog, HydrationLog, NutritionLog, SleepLog, TimelineEvent
+
+
+@dataclass(frozen=True)
+class TimelineEventInput:
+    event_type: str
+    title: str
+    description: str
+    deduplicate: bool = False
+
+
+def _add_timeline_event(
+    db: Session,
+    profile_id: str,
+    date: str,
+    timeline_event: TimelineEventInput,
+) -> None:
+    if timeline_event.deduplicate:
+        event = (
+            db.query(TimelineEvent)
+            .filter(
+                TimelineEvent.profile_id == profile_id,
+                TimelineEvent.date == date,
+                TimelineEvent.event_type == timeline_event.event_type,
+                TimelineEvent.title == timeline_event.title,
+            )
+            .first()
+        )
+        if event:
+            event.description = timeline_event.description
+            return
+
+    db.add(
+        TimelineEvent(
+            id=str(uuid.uuid4()),
+            profile_id=profile_id,
+            date=date,
+            event_type=timeline_event.event_type,
+            title=timeline_event.title,
+            description=timeline_event.description,
+            is_ai_generated=False,
+        )
+    )
+
+
+def _save_entry(
+    db: Session,
+    entry: NutritionLog | HydrationLog | SleepLog | ActivityLog,
+    timeline_event: TimelineEventInput | None,
+):
+    db.add(entry)
+    if timeline_event:
+        _add_timeline_event(db, entry.profile_id, entry.date, timeline_event)
+    db.commit()
+    db.refresh(entry)
+    return entry
 
 
 def create_nutrition(
@@ -17,6 +73,7 @@ def create_nutrition(
     carbs_g: float = 0,
     fat_g: float = 0,
     is_pakistani_food: bool = True,
+    timeline_event: TimelineEventInput | None = None,
     db: Session,
 ) -> NutritionLog:
     entry = NutritionLog(
@@ -32,10 +89,7 @@ def create_nutrition(
         fat_g=fat_g,
         is_pakistani_food=is_pakistani_food,
     )
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return _save_entry(db, entry, timeline_event)
 
 
 def create_hydration(
@@ -44,6 +98,7 @@ def create_hydration(
     date: str,
     amount_ml: int,
     source: str = "water",
+    timeline_event: TimelineEventInput | None = None,
     db: Session,
 ) -> HydrationLog:
     entry = HydrationLog(
@@ -53,10 +108,7 @@ def create_hydration(
         amount_ml=amount_ml,
         source=source,
     )
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return _save_entry(db, entry, timeline_event)
 
 
 def create_sleep(
@@ -65,6 +117,7 @@ def create_sleep(
     date: str,
     hours_slept: float,
     quality: int = 3,
+    timeline_event: TimelineEventInput | None = None,
     db: Session,
 ) -> SleepLog:
     entry = SleepLog(
@@ -74,10 +127,7 @@ def create_sleep(
         hours_slept=hours_slept,
         quality=quality,
     )
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return _save_entry(db, entry, timeline_event)
 
 
 def create_activity(
@@ -88,6 +138,7 @@ def create_activity(
     duration_min: int = 0,
     steps: int = 0,
     notes: str = "",
+    timeline_event: TimelineEventInput | None = None,
     db: Session,
 ) -> ActivityLog:
     entry = ActivityLog(
@@ -99,7 +150,4 @@ def create_activity(
         steps=steps,
         notes=notes,
     )
-    db.add(entry)
-    db.commit()
-    db.refresh(entry)
-    return entry
+    return _save_entry(db, entry, timeline_event)

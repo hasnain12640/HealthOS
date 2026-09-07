@@ -61,7 +61,7 @@ export interface ActivityAnalysis {
   percent: number
   status: string
   label: string
-  recent: { id: string; date: string; activity_type: string; duration_min: number; steps: number }[]
+  recent: { id: string; date: string; activity_type: string; duration_min: number; steps: number; notes: string }[]
 }
 
 export interface HealthPriority {

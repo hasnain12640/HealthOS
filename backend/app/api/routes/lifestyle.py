@@ -1,28 +1,50 @@
+from datetime import date as date_type
+from typing import Literal, Optional
+
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field, field_validator, model_validator
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import Optional
 
 from app.api.deps import get_current_profile
 from app.core.database import get_db
-from app.models.models import NutritionLog, HydrationLog, SleepLog, ActivityLog, HealthProfile
+from app.models.models import ActivityLog, HealthProfile, HydrationLog, NutritionLog, SleepLog
 from app.services import lifestyle as lifestyle_service
 
 router = APIRouter()
 
 
-# ── Nutrition ─────────────────────────────────────────────────────────────────
+class DatedLogCreate(BaseModel):
+    date: str = Field(min_length=10, max_length=10)
 
-class NutritionLogCreate(BaseModel):
-    date: str
-    meal_type: str
-    food_name: str
-    quantity_g: int = 0
-    calories: int = 0
-    protein_g: float = 0
-    carbs_g: float = 0
-    fat_g: float = 0
+    @field_validator("date")
+    @classmethod
+    def validate_date(cls, value: str) -> str:
+        try:
+            parsed = date_type.fromisoformat(value)
+        except ValueError as exc:
+            raise ValueError("Please provide a valid date in YYYY-MM-DD format.") from exc
+        if parsed > date_type.today():
+            raise ValueError("Date cannot be in the future.")
+        return value
+
+
+class NutritionLogCreate(DatedLogCreate):
+    meal_type: Literal["breakfast", "lunch", "dinner", "snack", "meal", "other"]
+    food_name: str = Field(max_length=200)
+    quantity_g: int = Field(default=0, ge=0, le=10000)
+    calories: int = Field(default=0, ge=0, le=10000)
+    protein_g: float = Field(default=0, ge=0, le=1000)
+    carbs_g: float = Field(default=0, ge=0, le=1000)
+    fat_g: float = Field(default=0, ge=0, le=1000)
     is_pakistani_food: bool = True
+
+    @field_validator("food_name")
+    @classmethod
+    def validate_food_name(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Food name cannot be empty.")
+        return value
 
 
 class NutritionLogOut(BaseModel):
@@ -51,6 +73,11 @@ def log_nutrition(
     return lifestyle_service.create_nutrition(
         profile.id,
         **data.model_dump(),
+        timeline_event=lifestyle_service.TimelineEventInput(
+            event_type="nutrition",
+            title=f"Meal logged — {data.food_name}",
+            description=f"Manual entry · {data.meal_type} · {data.calories} kcal",
+        ),
         db=db,
     )
 
@@ -67,12 +94,17 @@ def get_nutrition(
     return q.order_by(NutritionLog.date.desc()).all()
 
 
-# ── Hydration ─────────────────────────────────────────────────────────────────
+class HydrationLogCreate(DatedLogCreate):
+    amount_ml: int = Field(ge=1, le=5000)
+    source: str = Field(default="water", max_length=50)
 
-class HydrationLogCreate(BaseModel):
-    date: str
-    amount_ml: int
-    source: str = "water"
+    @field_validator("source")
+    @classmethod
+    def validate_source(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Source cannot be empty.")
+        return value
 
 
 class HydrationLogOut(BaseModel):
@@ -95,6 +127,11 @@ def log_hydration(
     return lifestyle_service.create_hydration(
         profile.id,
         **data.model_dump(),
+        timeline_event=lifestyle_service.TimelineEventInput(
+            event_type="hydration",
+            title=f"Water logged — {data.amount_ml} ml",
+            description="Manual entry",
+        ),
         db=db,
     )
 
@@ -111,12 +148,9 @@ def get_hydration(
     return q.order_by(HydrationLog.date.desc()).all()
 
 
-# ── Sleep ─────────────────────────────────────────────────────────────────────
-
-class SleepLogCreate(BaseModel):
-    date: str
-    hours_slept: float
-    quality: int = 3
+class SleepLogCreate(DatedLogCreate):
+    hours_slept: float = Field(ge=0.5, le=24)
+    quality: int = Field(default=3, ge=1, le=5)
 
 
 class SleepLogOut(BaseModel):
@@ -139,6 +173,11 @@ def log_sleep(
     return lifestyle_service.create_sleep(
         profile.id,
         **data.model_dump(),
+        timeline_event=lifestyle_service.TimelineEventInput(
+            event_type="sleep",
+            title=f"Sleep logged — {data.hours_slept:g} hours",
+            description=f"Manual entry · Quality {data.quality}/5",
+        ),
         db=db,
     )
 
@@ -148,20 +187,39 @@ def get_sleep(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
-    return (db.query(SleepLog)
-            .filter(SleepLog.profile_id == profile.id)
-            .order_by(SleepLog.date.desc())
-            .limit(14).all())
+    return (
+        db.query(SleepLog)
+        .filter(SleepLog.profile_id == profile.id)
+        .order_by(SleepLog.date.desc())
+        .limit(14)
+        .all()
+    )
 
 
-# ── Activity ──────────────────────────────────────────────────────────────────
+class ActivityLogCreate(DatedLogCreate):
+    activity_type: str = Field(max_length=100)
+    duration_min: int = Field(default=0, ge=0, le=1440)
+    steps: int = Field(default=0, ge=0, le=100000)
+    notes: str = Field(default="", max_length=500)
 
-class ActivityLogCreate(BaseModel):
-    date: str
-    activity_type: str
-    duration_min: int = 0
-    steps: int = 0
-    notes: str = ""
+    @field_validator("activity_type")
+    @classmethod
+    def validate_activity_type(cls, value: str) -> str:
+        value = value.strip()
+        if not value:
+            raise ValueError("Activity type cannot be empty.")
+        return value
+
+    @field_validator("notes")
+    @classmethod
+    def normalize_notes(cls, value: str) -> str:
+        return value.strip()
+
+    @model_validator(mode="after")
+    def validate_activity_amount(self):
+        if self.duration_min == 0 and self.steps == 0:
+            raise ValueError("Enter duration, steps, or both.")
+        return self
 
 
 class ActivityLogOut(BaseModel):
@@ -183,9 +241,19 @@ def log_activity(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
+    details = []
+    if data.duration_min:
+        details.append(f"{data.duration_min} minutes")
+    if data.steps:
+        details.append(f"{data.steps:,} steps")
     return lifestyle_service.create_activity(
         profile.id,
         **data.model_dump(),
+        timeline_event=lifestyle_service.TimelineEventInput(
+            event_type="activity",
+            title=f"Activity logged — {data.activity_type}",
+            description=f"Manual entry · {' · '.join(details)}",
+        ),
         db=db,
     )
 
@@ -195,7 +263,10 @@ def get_activity(
     profile: HealthProfile = Depends(get_current_profile),
     db: Session = Depends(get_db),
 ):
-    return (db.query(ActivityLog)
-            .filter(ActivityLog.profile_id == profile.id)
-            .order_by(ActivityLog.date.desc())
-            .limit(14).all())
+    return (
+        db.query(ActivityLog)
+        .filter(ActivityLog.profile_id == profile.id)
+        .order_by(ActivityLog.date.desc())
+        .limit(14)
+        .all()
+    )

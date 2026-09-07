@@ -1,4 +1,5 @@
 from app.services.lifestyle.service import (
+    TimelineEventInput,
     create_activity,
     create_hydration,
     create_nutrition,
@@ -6,6 +7,7 @@ from app.services.lifestyle.service import (
 )
 
 __all__ = [
+    "TimelineEventInput",
     "create_activity",
     "create_hydration",
     "create_nutrition",

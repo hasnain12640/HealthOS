@@ -7,8 +7,8 @@ import {
 import { Badge, PageWrapper, Spinner } from '../components/ui'
 import { AnatomyExplorer } from '../components/dashboard/AnatomyExplorer'
 import { DashboardInsight } from '../components/dashboard/DashboardInsight'
+import { ManualLifestyleEntryModal, type LifestyleEntryType } from '../components/lifestyle/ManualLifestyleEntryModal'
 import { getDashboard, type DashboardData } from '../services/dashboardService'
-import { logHydration } from '../services/lifestyleService'
 import { getInsight, type InsightData } from '../services/planService'
 import { useT } from '../i18n/useT'
 import { onVoiceRefresh } from '../utils/voiceEvents'
@@ -22,6 +22,7 @@ const timelineIcons: Record<string, IconType> = {
   ai_insight: Bot,
   plan: CalendarDays,
   activity: Activity,
+  sleep: Moon,
   wearable: Watch,
   cycle: Heart,
   cycle_symptom: HeartPulse,
@@ -34,6 +35,7 @@ const timelineColors: Record<string, string> = {
   ai_insight: 'text-primary-light border-primary-light/25 bg-primary-light/10',
   plan: 'text-warning border-warning/25 bg-warning/10',
   activity: 'text-accent border-accent/25 bg-accent/10',
+  sleep: 'text-primary-light border-primary-light/25 bg-primary-light/10',
   wearable: 'text-primary border-primary/25 bg-primary/10',
   cycle: 'text-status-high border-status-high/25 bg-status-high/10',
   cycle_symptom: 'text-status-low border-status-low/25 bg-status-low/10',
@@ -296,10 +298,7 @@ export function Dashboard() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [insightData, setInsightData] = useState<InsightData | null>(null)
-  const [showHydrationForm, setShowHydrationForm] = useState(false)
-  const [hydrationAmount, setHydrationAmount] = useState('250')
-  const [hydrationError, setHydrationError] = useState<string | null>(null)
-  const [savingHydration, setSavingHydration] = useState(false)
+  const [entryType, setEntryType] = useState<LifestyleEntryType | null>(null)
   const hasLoaded = useRef(false)
   const navigate = useNavigate()
   const t = useT()
@@ -338,27 +337,6 @@ export function Dashboard() {
   useEffect(() => onVoiceRefresh((scopes) => {
     if (scopes.includes('dashboard')) void loadDashboard()
   }), [loadDashboard])
-
-  const handleHydrationSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    const amount = Number(hydrationAmount)
-    if (!Number.isFinite(amount) || amount <= 0) {
-      setHydrationError(t['dashboard.hydration_amount_error'])
-      return
-    }
-
-    setSavingHydration(true)
-    setHydrationError(null)
-    try {
-      await logHydration(Math.round(amount))
-      setShowHydrationForm(false)
-      await loadDashboard()
-    } catch {
-      setHydrationError(t['common.backend_not_reachable'])
-    } finally {
-      setSavingHydration(false)
-    }
-  }
 
   if (loading) {
     return (
@@ -409,8 +387,9 @@ export function Dashboard() {
   const topPriority = priorities[0]
 
   return (
-    <PageWrapper title={`${greeting}, ${firstName}`} subtitle={t['dashboard.your_health_journey']} action={contextPills}>
-      <div className="dashboard-page space-y-5 pb-4">
+    <>
+      <PageWrapper title={`${greeting}, ${firstName}`} subtitle={t['dashboard.your_health_journey']} action={contextPills}>
+        <div className="dashboard-page space-y-5 pb-4">
         {/* Summary cards */}
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <DashboardStat
@@ -483,18 +462,13 @@ export function Dashboard() {
               <div className="mt-4 h-2 overflow-hidden rounded-full bg-bg-elevated"><div className={`dashboard-progress h-full rounded-full ${hydrationColor}`} style={{ width: `${hydrationPercent}%` }} /></div>
               <div className="mt-4 flex items-center justify-between gap-3">
                 <span className="text-[11px] text-text-muted">{hydration.target_ml > hydration.today_ml ? t['dashboard.ml_remaining'].replace('{{ml}}', String(hydration.target_ml - hydration.today_ml)) : t['dashboard.target_reached']}</span>
-                <button type="button" onClick={() => { setShowHydrationForm(open => !open); setHydrationError(null) }} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"><CirclePlus size={13} />{t['dashboard.add_water']}</button>
+                <button type="button" onClick={() => setEntryType('hydration')} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-2.5 py-1.5 text-xs font-medium text-primary transition-colors hover:bg-primary/20"><CirclePlus size={13} />{t['dashboard.add_water']}</button>
               </div>
-              {showHydrationForm && (
-                <form onSubmit={handleHydrationSubmit} className="mt-3 rounded-xl border border-primary/20 bg-bg-base/60 p-3">
-                  <label htmlFor="dashboard-water-amount" className="text-[11px] font-medium text-text-secondary">{t['dashboard.water_amount']}</label>
-                  <div className="mt-1.5 flex gap-2">
-                    <input id="dashboard-water-amount" type="number" min="1" step="1" value={hydrationAmount} onChange={event => setHydrationAmount(event.target.value)} className="min-w-0 flex-1 rounded-lg border border-border-subtle bg-bg-surface px-2.5 py-1.5 text-sm text-text-primary outline-none focus:border-primary" />
-                    <button type="submit" disabled={savingHydration} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60">{savingHydration ? t['common.loading'] : t['common.save']}</button>
-                  </div>
-                  {hydrationError && <p className="mt-1.5 text-[11px] text-danger">{hydrationError}</p>}
-                </form>
-              )}
+              <div className="mt-4 grid grid-cols-3 gap-2">
+                <button type="button" onClick={() => setEntryType('nutrition')} className="inline-flex min-w-0 items-center justify-center gap-1 rounded-lg border border-border-subtle bg-bg-base/45 px-2 py-2 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/30 hover:text-primary"><Apple size={13} />{t['lifestyle.log_nutrition']}</button>
+                <button type="button" onClick={() => setEntryType('activity')} className="inline-flex min-w-0 items-center justify-center gap-1 rounded-lg border border-border-subtle bg-bg-base/45 px-2 py-2 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/30 hover:text-primary"><Activity size={13} />{t['lifestyle.log_activity']}</button>
+                <button type="button" onClick={() => setEntryType('sleep')} className="inline-flex min-w-0 items-center justify-center gap-1 rounded-lg border border-border-subtle bg-bg-base/45 px-2 py-2 text-[11px] font-medium text-text-secondary transition-colors hover:border-primary/30 hover:text-primary"><Moon size={13} />{t['lifestyle.log_sleep']}</button>
+              </div>
             </section>
 
             {isFemaleProfile && womens_health && (
@@ -561,7 +535,14 @@ export function Dashboard() {
             <p className="mt-4 rounded-xl bg-bg-base/45 p-4 text-center text-xs text-text-secondary">{t['dashboard.no_timeline_events']}</p>
           )}
         </section>
-      </div>
-    </PageWrapper>
+        </div>
+      </PageWrapper>
+      <ManualLifestyleEntryModal
+        open={entryType !== null}
+        entryType={entryType ?? 'hydration'}
+        onClose={() => setEntryType(null)}
+        onSuccess={loadDashboard}
+      />
+    </>
   )
 }

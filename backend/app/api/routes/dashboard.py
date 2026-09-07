@@ -68,7 +68,7 @@ def get_dashboard(
     # --- Timeline ---
     timeline = db.query(TimelineEvent).filter(
         TimelineEvent.profile_id == profile_id
-    ).order_by(TimelineEvent.date.desc()).all()
+    ).order_by(TimelineEvent.date.desc(), TimelineEvent.created_at.desc()).all()
 
     # --- Wearable ---
     wearable_summary = wearable_service.get_connected_summary(profile_id, db)

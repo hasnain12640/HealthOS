@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.dates import today_iso
-from app.models.models import HealthProfile, TimelineEvent
+from app.models.models import HealthProfile
 from app.services import lifestyle as lifestyle_service
 from app.services.ai.health_context import build_health_system_prompt
 from app.services.ai.mock_provider import MockProvider
@@ -74,40 +74,6 @@ def _message(english: str, urdu: str, roman_urdu: str, language: DetectedLanguag
     if language == "en":
         return english
     return roman_urdu if roman else urdu
-
-
-def _timeline_event(
-    db: Session,
-    profile_id: str,
-    *,
-    event_type: str,
-    title: str,
-    description: str,
-) -> None:
-    today = today_iso()
-    event = (
-        db.query(TimelineEvent)
-        .filter(
-            TimelineEvent.profile_id == profile_id,
-            TimelineEvent.date == today,
-            TimelineEvent.event_type == event_type,
-            TimelineEvent.title == title,
-        )
-        .first()
-    )
-    if event:
-        event.description = description
-    else:
-        db.add(TimelineEvent(
-            id=str(uuid.uuid4()),
-            profile_id=profile_id,
-            date=today,
-            event_type=event_type,
-            title=title,
-            description=description,
-            is_ai_generated=False,
-        ))
-    db.commit()
 
 
 def _result_for_entry(entry, *fields: str) -> dict:
@@ -242,14 +208,17 @@ def _execute_action(
 
     if isinstance(intent, HydrationIntent):
         entry = lifestyle_service.create_hydration(
-            profile.id, date=today, amount_ml=intent.parameters.amount_ml, source="voice", db=db
-        )
-        _timeline_event(
-            db,
             profile.id,
-            event_type="voice_hydration",
-            title=f"Hydration logged via Voice — {entry.amount_ml} ml",
-            description="Mira",
+            date=today,
+            amount_ml=intent.parameters.amount_ml,
+            source="voice",
+            timeline_event=lifestyle_service.TimelineEventInput(
+                event_type="voice_hydration",
+                title=f"Hydration logged via Voice — {intent.parameters.amount_ml} ml",
+                description="Mira",
+                deduplicate=True,
+            ),
+            db=db,
         )
         return (
             _result_for_entry(entry, "date", "amount_ml", "source"),
@@ -270,14 +239,13 @@ def _execute_action(
             activity_type=intent.parameters.activity_type,
             duration_min=intent.parameters.duration_minutes,
             notes="Mira",
+            timeline_event=lifestyle_service.TimelineEventInput(
+                event_type="voice_activity",
+                title=f"Activity logged via Voice — {intent.parameters.activity_type}",
+                description=f"{intent.parameters.duration_minutes} minutes",
+                deduplicate=True,
+            ),
             db=db,
-        )
-        _timeline_event(
-            db,
-            profile.id,
-            event_type="voice_activity",
-            title=f"Activity logged via Voice — {entry.activity_type}",
-            description=f"{entry.duration_min} minutes",
         )
         return (
             _result_for_entry(entry, "date", "activity_type", "duration_min"),
@@ -293,14 +261,16 @@ def _execute_action(
 
     if isinstance(intent, SleepIntent):
         entry = lifestyle_service.create_sleep(
-            profile.id, date=today, hours_slept=intent.parameters.duration_hours, db=db
-        )
-        _timeline_event(
-            db,
             profile.id,
-            event_type="voice_sleep",
-            title=f"Sleep logged via Voice — {entry.hours_slept:g} hours",
-            description="Mira",
+            date=today,
+            hours_slept=intent.parameters.duration_hours,
+            timeline_event=lifestyle_service.TimelineEventInput(
+                event_type="voice_sleep",
+                title=f"Sleep logged via Voice — {intent.parameters.duration_hours:g} hours",
+                description="Mira",
+                deduplicate=True,
+            ),
+            db=db,
         )
         return (
             _result_for_entry(entry, "date", "hours_slept", "quality"),
@@ -321,14 +291,13 @@ def _execute_action(
             meal_type=intent.parameters.meal_type,
             food_name=intent.parameters.food_description,
             calories=intent.parameters.estimated_calories_if_available or 0,
+            timeline_event=lifestyle_service.TimelineEventInput(
+                event_type="voice_nutrition",
+                title=f"Nutrition logged via Voice — {intent.parameters.meal_type}",
+                description=intent.parameters.food_description,
+                deduplicate=True,
+            ),
             db=db,
-        )
-        _timeline_event(
-            db,
-            profile.id,
-            event_type="voice_nutrition",
-            title=f"Nutrition logged via Voice — {entry.meal_type}",
-            description=entry.food_name,
         )
         return (
             _result_for_entry(entry, "date", "meal_type", "food_name", "calories"),
