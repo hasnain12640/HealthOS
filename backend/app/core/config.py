@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     AI_PROVIDER: str = "mock"
     QWEN_API_KEY: str = ""
     QWEN_MODEL: str = "qwen-plus"
-    QWEN_BASE_URL: str = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    QWEN_BASE_URL: str = "https://ws-yvjlsrp250nie9ue.ap-southeast-1.maas.aliyuncs.com/compatible-mode/v1"
 
     # Voice Agent (an empty provider follows AI_PROVIDER)
     VOICE_PROVIDER: str = ""
